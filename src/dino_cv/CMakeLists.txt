@@ -43,6 +43,8 @@ find_package( OpenCV REQUIRED )
 find_package(PkgConfig)
 pkg_search_module(ZBAR zbar)
 
+add_definitions("-std=c++11")
+
 include_directories(${catkin_INCLUDE_DIRS}  ${OpenCV_INCLUDE_DIRS})
 add_executable(qr_detector src/qr_detector.cpp)
 target_link_libraries(qr_detector ${OpenCV_LIBRARIES} ${catkin_LIBRARIES} ${ZBAR_LIBRARIES})

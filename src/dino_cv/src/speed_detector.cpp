@@ -1,4 +1,6 @@
 #include <ros/ros.h>
+#include <math.h>
+#include <string>
 #include <image_transport/image_transport.h>
 #include <cv_bridge/cv_bridge.h>
 #include <sensor_msgs/image_encodings.h>
@@ -61,6 +63,7 @@ public:
 
         float w = image.size().width;
         float h = image.size().height;
+        cv::Point2f po(w/2, h/2);
         cv::Point2f p1(w/4, h/4);
         cv::Point2f p2(w - p1.x, h - p1.y);
         
@@ -97,6 +100,9 @@ public:
             
             calcOpticalFlowPyrLK(   prevGray, gray, points[0], points[1], 
                                     status, err, winSize, 3, termcrit, 0, 0.001);
+            
+            double vel = 0;
+            int n=0;
             size_t i, k;
             for(i=k=0; i<points[1].size(); i++) {
             
@@ -104,9 +110,23 @@ public:
                     continue;
            
                 points[1][k++] = points[1][i];
+
+                double a1 = atan2((double) points[0][i].y - po.y, (double) points[0][i].x - po.x);
+                double a2 = atan2((double) points[1][i].y - po.y, (double) points[1][i].x - po.x);
+
                 line(image, points[0][i], points[1][i], cv::Scalar(0,0,255), 1, 8, 0);
-                circle(image, points[1][i], 5, cv::Scalar(0,255,0), 1, 8);
+                if(fabs(a1 - a2) < 0.02) {                 
+                    circle(image, points[1][i], 5, cv::Scalar(0,255,0), 1, 8);
+                    double dx = points[0][i].x - points[1][i].x;  
+                    double dy = points[0][i].y - points[1][i].y;                                  
+                    vel += sqrt(dx*dx + dy*dy);
+                    n++;
+                } else {
+                    circle(image, points[1][i], 5, cv::Scalar(255,0,255), 1, 8);
+                }             
             }
+            std::string str = std::to_string(vel/n);
+            putText(image, str, cv::Point2f(10, h- 10), cv::FONT_HERSHEY_SIMPLEX, 0.8, cv::Scalar(0,255,0), 2, 8, false); 
 
             points[1].resize(k);
         }
@@ -123,7 +143,7 @@ public:
         cv::swap(prevGray, gray);
 
         // Output modified video stream
-        //image_pub_.publish(cv_ptr->toImageMsg());
+        image_pub_.publish(cv_ptr->toImageMsg());
     }   
 };
 
