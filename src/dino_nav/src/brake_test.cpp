@@ -20,10 +20,14 @@ void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
     view.l = 400;
 
     int size = msg->ranges.size();
-    float front_ray = msg->ranges[size/2];
+    int idx = size/2;
+    float front_ray = (msg->ranges[idx] + msg->ranges[idx-1] + msg->ranges[idx+1])/3;
     int ray_wideness = 40;
-    float left_ray = msg->ranges[size/2 + ray_wideness];
-    float right_ray = msg->ranges[size/2 - ray_wideness];
+
+    idx = size/2 + ray_wideness;
+    float left_ray = (msg->ranges[idx] + msg->ranges[idx-1] + msg->ranges[idx+1])/3;
+    idx = size/2 - ray_wideness;
+    float right_ray = (msg->ranges[idx] + msg->ranges[idx-1] + msg->ranges[idx+1])/3;
     front_ray = front_ray*view.l/10;
     left_ray = left_ray*view.l/10;
     right_ray = right_ray*view.l/10;
@@ -73,6 +77,9 @@ void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
         m.angle = 100;
     if(m.angle <-100)
         m.angle = -100;
+    if(m.angle != m.angle)
+        m.angle = 0;
+    m.angle = -m.angle;
     viz_text(view.x + view.l + 20, view.y +60, 20, VIEW_COLOR, "steer: %f", m.angle);
 
     drive_pub.publish(m);

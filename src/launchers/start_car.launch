@@ -25,7 +25,7 @@
 		<param name="publish_pose_stamped" value="true" />
 	</node-->
 
-	<node name="dino_nav" pkg="dino_nav" type="dinonav"/>
+	<!--node name="dino_nav" pkg="dino_nav" type="dinonav"/-->
 </launch>
 
 
