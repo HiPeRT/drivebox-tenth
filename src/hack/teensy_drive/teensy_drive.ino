@@ -21,24 +21,24 @@ unsigned long duration = 0;
 
 boolean manual = false;
 
-void writepwm(int pwm_angle, int pwm_drive) 
+void writepwm(int pwm_angle, int pwm_drive)
 {
   if (pwm_drive < pwm_lowerlimit) {
     analogWrite(5, pwm_lowerlimit);   //  Safety lower limit
-  
+
   } else if (pwm_drive > pwm_upperlimit) {
     analogWrite(5, pwm_upperlimit);   //  Safety upper limit
-  
+
   } else {
     analogWrite(5, pwm_drive);    //  Incoming data
   }
 
   if (pwm_angle < pwm_lowerlimit) {
     analogWrite(6, pwm_lowerlimit);   //  Safety lower limit
-  
+
   } else if (pwm_angle > pwm_upperlimit) {
     analogWrite(6, pwm_upperlimit);   //  Safety upper limit
-  
+
   } else {
     analogWrite(6, pwm_angle);    //  Incoming data
   }
@@ -49,10 +49,10 @@ void messageDrive( const race::drive_param& par )
 {
   if (manual)
     return;
-  
+
   if (flagStop == false) {
-    int16_t pwm_drive = map(par.velocity,-100,100,6554,13108);
-    int16_t pwm_angle = map(par.angle,-100,100,6554,13108);
+    int16_t pwm_drive = map(par.velocity, -100, 100, 6554, 13108);
+    int16_t pwm_angle = map(par.angle, -100, 100, 6554, 13108);
     writepwm(pwm_angle, pwm_drive);
     //str_msg.data = pwm_drive;
     //chatter.publish( &str_msg );
@@ -88,7 +88,7 @@ void setup() {
 
   pinMode(14, INPUT);
   pinMode(15, INPUT);
-  
+
   analogWrite(5, pwm_center_value);
   analogWrite(6, pwm_center_value);
   pinMode(13, OUTPUT);
@@ -106,27 +106,27 @@ void setup() {
 }
 
 void loop() {
-  unsigned long pwm_angle = pulseIn(15, HIGH, 30000);
-  unsigned long pwm_drive = pulseIn(14, HIGH, 30000);
+  unsigned long pwm_angle = pulseIn(14, HIGH, 30000);
+  unsigned long pwm_drive = pulseIn(15, HIGH, 30000);
 
-  str_msg.data = manual;
-  chatter.publish( &str_msg );
-  
-  if ( (pwm_angle > 500 && pwm_angle < 2500) && (pwm_angle > 1550 || pwm_drive > 1550 || pwm_angle < 1450 || pwm_drive < 1450)) {
-    manual = true;
-  }
-  if(manual) {
-    int angle = map(pwm_angle, 1000, 2000, pwm_lowerlimit, pwm_upperlimit);
-    int drive = map(pwm_drive, 1000, 2000, pwm_lowerlimit, pwm_upperlimit);
-    writepwm(angle, drive);
-  }
-  
-  nh.spinOnce();
+    str_msg.data = manual;
+    chatter.publish( &str_msg );
 
-  if(manual)
-    digitalWrite(2, LOW);
-  else
-    digitalWrite(2, HIGH);
+    if ( (pwm_angle > 500 && pwm_angle < 2500) && (pwm_angle > 1550 || pwm_drive > 1550 || pwm_angle < 1450 || pwm_drive < 1450)) {
+      manual = true;
+    }
+    if(manual) {
+      int angle = map(pwm_angle, 1000, 2000, pwm_lowerlimit, pwm_upperlimit);
+      int drive = map(pwm_drive, 1000, 2000, pwm_lowerlimit, pwm_upperlimit);
+      writepwm(angle, drive);
+    }
+
+    nh.spinOnce();
+
+    if(manual)
+      digitalWrite(2, LOW);
+    else
+      digitalWrite(2, HIGH);
 }
 
 
