@@ -15,7 +15,8 @@ const int MAX_TESTS = 8;
 const int MAX_VELS = 1024;
 struct test_t {
     float throttle, brake;
-    float vels[MAX_VELS], vels_n;
+    float vels[MAX_VELS];
+    int vels_n;
     float speed_reached, start, brake_start, brake_end;
 } tests[MAX_TESTS];
 int test_num;
@@ -48,6 +49,11 @@ void print_test_text(int id) {
         t->start, t->brake_start, t->brake_end);
     printf("max speed %f, acc dist %f, brake dist %f\n", 
         t->speed_reached, t->start - t->brake_start, t->brake_start - t->brake_end); 
+    printf("-------------------------\n");
+    printf("vels: ");
+    for(int i=0; i<t->vels_n; i++)
+        printf("%f ", t->vels[i]);
+    printf("\n");
     printf("-------------------------\n\n");
 }
 
@@ -61,7 +67,7 @@ float mean_ray(std::vector<float> v, int idx, int l) {
 
 void run_test(float &throttle, float &steer, float wall_dist, vquad_t &view) {
 
-    const float start_dist = 6;
+    const float start_dist = 4.5f;
     const float min_dist = 3;
 
     static state_e state = PREPARE;
@@ -84,6 +90,11 @@ void run_test(float &throttle, float &steer, float wall_dist, vquad_t &view) {
 
     test_t *test = &tests[current_test];
 
+    if( (state == START || state == BRAKE) && test->vels_n < MAX_VELS-1) {
+        test->vels[test->vels_n] = speed;
+        test->vels_n++;
+    }
+
     switch(state) {
 
     case PREPARE:
@@ -93,14 +104,17 @@ void run_test(float &throttle, float &steer, float wall_dist, vquad_t &view) {
             steer = -steer;
         } else {
             state = START;
-            tests->start = wall_dist;
+            test->start = wall_dist;
             printf("test %d START\n", current_test);
         }
         break;
 
     case START:
         viz_text(view.x + view.l + 20, view.y +140, 15, VIEW_COLOR, "test %d status: START");
-        if(wall_dist > min_dist) {
+        if(wall_dist < 1) {
+	    throttle = -100;
+	    printf("emergency brake");
+	} else if(wall_dist > min_dist) {
             throttle = test->throttle;
         } else {
             state = BRAKE;
@@ -112,7 +126,7 @@ void run_test(float &throttle, float &steer, float wall_dist, vquad_t &view) {
 
     case BRAKE:
         viz_text(view.x + view.l + 20, view.y +140, 15, VIEW_COLOR, "test %d status: BRAKE");
-        if(speed > 0.001 || speed < -0.001) {
+        if(speed > 0.01 || speed < -0.01) {
             throttle = test->brake;
         } else {
             test->brake_end = wall_dist;
@@ -149,7 +163,7 @@ void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
 
     int size = msg->ranges.size();
     float orig_front_ray = mean_ray(msg->ranges, size/2, 2);
-    int ray_wideness = 40;
+    int ray_wideness = 30;
 
     float left_ray = mean_ray(msg->ranges, size/2 + ray_wideness, 2);
     float right_ray = mean_ray(msg->ranges, size/2 - ray_wideness, 2);
@@ -218,15 +232,31 @@ void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
 
 
 void init_tests() {
-    test_num = 2; 
+    test_num = 6; 
 
-    tests[0].throttle =  10;
-    tests[0].brake = -5;
+    tests[0].throttle = 10;
+    tests[0].brake = -100;
     tests[0].vels_n = 0;
     
-    tests[1].throttle =  20;
-    tests[1].brake = -5;
+    tests[1].throttle = 20;
+    tests[1].brake = -100;
     tests[1].vels_n = 0;
+
+    tests[2].throttle = 30;
+    tests[2].brake = -100;
+    tests[2].vels_n = 0;
+    
+    tests[3].throttle = 40;
+    tests[3].brake = -100;
+    tests[3].vels_n = 0;
+
+    tests[4].throttle = 50;
+    tests[4].brake = -100;
+    tests[4].vels_n = 0;
+    
+    tests[5].throttle = 60;
+    tests[5].brake = -100;
+    tests[5].vels_n = 0;
 }
 
 
