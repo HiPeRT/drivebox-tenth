@@ -68,7 +68,7 @@ limitations under the License.
        axle_length. -->
   <xacro:property name="hub_dia" value="0.09652"/>
   <xacro:property name="tire_dia" value="0.14605"/>
-  <xacro:property name="tire_width" value="0.06"/>
+  <xacro:property name="tire_width" value="0.0855"/>
   <xacro:property name="hex_hub_depth" value="0.01445"/>
   <xacro:property name="wheel_mass" value="0.29"/>
 
