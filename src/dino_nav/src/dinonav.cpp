@@ -17,6 +17,21 @@ ros::Publisher drive_pub, map_pub; //path_pub;
 float speed = 0;
 int inflation = 0;
 
+void print_map(int grid[], int size) {
+
+    for(int i=0; i<size; i++) {
+        printf(" ");
+        for(int j=0; j<size; j++) {
+            int val = grid[i*size +j];
+            if(val == 1) printf("X ");
+            else if(val == 10) printf("* ");
+            else printf("  ");
+        }
+        printf("\n");
+    }
+    printf("\n");
+}
+
 void reconf(dino_nav::DinonavConfig &config, uint32_t level) {
   ROS_INFO("Reconfigure Request: %d", config.speed);
   speed = config.speed;
@@ -56,7 +71,7 @@ void grid_line(int grid[], int x1, int y1, int x2, int y2) {
 bool setgrid(int grid[], int x, int y, int value) {
     int pos = y*GRID_DIM + x;
 
-    if(pos <0 || pos >= GRID_DIM*GRID_DIM)
+    if(x<0 || pos <0 || pos >= GRID_DIM*GRID_DIM)
         return false;
     grid[pos] = value;
     return true;
@@ -65,7 +80,7 @@ bool setgrid(int grid[], int x, int y, int value) {
 int getgrid(int grid[], int x, int y) {
     int pos = y*GRID_DIM + x;
 
-    if(pos <0 || pos >= GRID_DIM*GRID_DIM)
+    if(x<0 || pos <0 || pos >= GRID_DIM*GRID_DIM)
         return -1;
     return grid[pos];
 }
@@ -170,7 +185,7 @@ void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
 
     drive_pub.publish(m);
 
-
+    //print_map(grid, GRID_DIM);
     nav_msgs::OccupancyGrid grid_p;
     grid_p.info.resolution = 0.1;      // float32
     grid_p.info.width      = GRID_DIM; // uint32
