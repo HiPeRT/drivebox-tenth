@@ -118,9 +118,6 @@ limitations under the License.
   <material name="chassis_mat">
     <color rgba="0.5 0.5 0.5 1"/>
   </material>
-  <material name="tire_mat">
-    <color rgba="0 0 0 1"/>
-  </material>
 
   <!-- Null inertial element. This is needed to make the model work with
        Gazebo. -->
@@ -275,9 +272,8 @@ limitations under the License.
                      2 - hex_hub_depth))}
                      0"/>
         <geometry>
-          <cylinder radius="${tire_dia / 2}" length="${tire_width}"/>
-        </geometry>
-        <material name="tire_mat"/>
+          <mesh filename="package://ackermann_vehicle_description/meshes/tire.dae"/>
+        </geometry>       
       </visual>
 
       <collision>
@@ -294,10 +290,6 @@ limitations under the License.
           inner_rad="${hub_dia / 2}" outer_rad="${tire_dia / 2}"
           height="${tire_width}" mass="${wheel_mass}"/>
     </link>
-
-    <gazebo reference="${lr_prefix}_${fr_prefix}_wheel">
-      <material>Gazebo/Black</material>
-    </gazebo>
   </xacro:macro>
 
   <!-- Front wheel -->
@@ -364,9 +356,9 @@ limitations under the License.
     <visual>
       <origin xyz="0 0 ${-chassis_height / 2}"/>
       <geometry>
-        <box size="${chassis_length} ${chassis_width} ${chassis_height}"/>
+        <!--box size="${chassis_length} ${chassis_width} ${chassis_height}"/-->
+        <mesh filename="package://ackermann_vehicle_description/meshes/chassis.dae"/>
       </geometry>
-      <material name="chassis_mat"/>
     </visual>
 
     <collision>
@@ -382,9 +374,6 @@ limitations under the License.
       <origin xyz="0 0 ${-chassis_height / 2}"/>
     </xacro:solid_cuboid_inertial>
   </link>
-  <gazebo reference="chassis">
-    <material>Gazebo/Grey</material>
-  </gazebo>
 
   <joint name="base_link_to_chassis" type="fixed">
     <parent link="base_link"/>
