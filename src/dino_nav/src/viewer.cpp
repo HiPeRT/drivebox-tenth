@@ -9,17 +9,16 @@
 #include "nav_msgs/OccupancyGrid.h"
 
 ALLEGRO_FONT *font;
+#define GRID_MAX_DIM 1000
+
 
 void map_recv(const nav_msgs::OccupancyGrid::ConstPtr& msg) {
     ROS_INFO("map recived");
     al_clear_to_color(al_map_rgb(0,0,0));
 
-    int GRID_DIM = msg->info.width;
-
-    static int *grid= NULL;
-    if(grid == NULL)
-        grid = new int[GRID_DIM*GRID_DIM];
-
+    int grid_dim = msg->info.width;
+    int grid[GRID_MAX_DIM*GRID_MAX_DIM];
+    
     float alpha = 0.3f;
     ALLEGRO_COLOR scan_col = al_map_rgba_f(1.0f, 0, 0, 1.0f);
     ALLEGRO_COLOR obst_col = al_map_rgba_f(1.0f*alpha,1.0f*alpha, 0, alpha);
@@ -31,25 +30,25 @@ void map_recv(const nav_msgs::OccupancyGrid::ConstPtr& msg) {
     float view_l = 512;
     float view_x = 10, view_y = 10;
 
-    float cell_l = view_l / float(GRID_DIM);
+    float cell_l = view_l / float(grid_dim);
 
-    for(int i=0; i<GRID_DIM; i++) {
+    for(int i=0; i<grid_dim; i++) {
         al_draw_line(view_x + i * cell_l, view_y, view_x + i * cell_l, view_y + view_l, quad_grid, 1);
         al_draw_line(view_x, view_y + i * cell_l, view_x + view_l, view_y + i * cell_l, quad_grid, 1);
 
-        for (int j = 0; j < GRID_DIM; j++)
-            grid[i*GRID_DIM +j] = msg->data[i*GRID_DIM + j];
+        for (int j = 0; j < grid_dim; j++)
+            grid[i*grid_dim +j] = msg->data[i*grid_dim + j];
     }
 
     al_draw_rectangle(view_x, view_y, view_x + view_l, view_y + view_l, quad_col, 1);
 
-    for(int i=0; i<GRID_DIM; i++) {
-        for (int j = 0; j < GRID_DIM; j++) {
-            if (grid[i*GRID_DIM +j] == 1) {
+    for(int i=0; i<grid_dim; i++) {
+        for (int j = 0; j < grid_dim; j++) {
+            if (grid[i*grid_dim +j] == 1) {
                 al_draw_filled_rectangle(view_x + cell_l * j, view_y + cell_l * i, view_x + cell_l * (j + 1),
                                          view_y + cell_l * (i + 1), obst_col);
             }
-            if (grid[i*GRID_DIM +j] == 10) {
+            if (grid[i*grid_dim +j] == 10) {
                 al_draw_filled_rectangle(view_x + cell_l * j, view_y + cell_l * i, view_x + cell_l * (j + 1),
                                          view_y + cell_l * (i + 1), path_col);
             }

@@ -9,6 +9,7 @@
 #include "pathfind.h"
 
 extern int stop_cost;
+extern int grid_dim;
 
 static void eject(nodo * &testa, nodo* &coda, int &x, int &y)
 {
@@ -56,13 +57,13 @@ int bigger_x, bigger_y, bigger_value;
 
 bool gridcheck(int path[], int grid[], int ox, int oy, int x, int y) {
 
-    int pos = y*GRID_DIM + x;
-    if(x<0 || pos <0 || pos >= GRID_DIM*GRID_DIM)
+    int pos = y*grid_dim + x;
+    if(x<0 || pos <0 || pos >= grid_dim*grid_dim)
         return false;
 
     if (grid[pos] == 0 && path[pos] == 0) {
-        int val = path[oy*GRID_DIM + ox] +1;
-        path[y*GRID_DIM + x] = val;
+        int val = path[oy*grid_dim + ox] +1;
+        path[y*grid_dim + x] = val;
 
         if(val > bigger_value) {
             bigger_value = val;
@@ -78,7 +79,7 @@ bool gridcheck(int path[], int grid[], int ox, int oy, int x, int y) {
 
 void pathfinding(int path[], int grid[], int xp, int yp, int &xa, int &ya)
 {
-    
+
     //Algoritmo BFS:
     nodo *testa = NULL;
     nodo *coda = NULL;

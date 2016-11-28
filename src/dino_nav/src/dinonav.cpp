@@ -17,6 +17,7 @@ ros::Publisher drive_pub, map_pub; //path_pub;
 float speed = 0;
 int inflation = 0;
 int stop_cost = 15;
+int grid_dim = 100;
 
 void print_map(int grid[], int size) {
 
@@ -38,6 +39,7 @@ void reconf(dino_nav::DinonavConfig &config, uint32_t level) {
   speed = config.speed;
   inflation = config.inflation;
   stop_cost = config.stop_cost;
+  grid_dim = config.grid_dim;
 }
 
 /**
@@ -71,18 +73,18 @@ void grid_line(int grid[], int x1, int y1, int x2, int y2) {
     set a grid to value in given position
 */
 bool setgrid(int grid[], int x, int y, int value) {
-    int pos = y*GRID_DIM + x;
+    int pos = y*grid_dim + x;
 
-    if(x<0 || pos <0 || pos >= GRID_DIM*GRID_DIM)
+    if(x<0 || pos <0 || pos >= grid_dim*grid_dim)
         return false;
     grid[pos] = value;
     return true;
 }
 
 int getgrid(int grid[], int x, int y) {
-    int pos = y*GRID_DIM + x;
+    int pos = y*grid_dim + x;
 
-    if(x<0 || pos <0 || pos >= GRID_DIM*GRID_DIM)
+    if(x<0 || pos <0 || pos >= grid_dim*grid_dim)
         return -1;
     return grid[pos];
 }
@@ -129,11 +131,11 @@ void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
     float view_l = 512;
     float view_x = 10, view_y = 10;
 
-    float cell_l = view_l / float(GRID_DIM);
-    int grid[GRID_DIM*GRID_DIM];
+    float cell_l = view_l / float(grid_dim);
+    int grid[GRID_MAX_DIM*GRID_MAX_DIM];
 
     //init grid
-    for(int i=0; i<GRID_DIM*GRID_DIM; i++)
+    for(int i=0; i<grid_dim*grid_dim; i++)
         grid[i] = 0;
 
     int last_x = -1, last_y = -1;
@@ -164,11 +166,11 @@ void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
     }
 
     //path grid
-    int path[GRID_DIM*GRID_DIM];
-    for(int i=0; i<GRID_DIM*GRID_DIM; i++)
+    int path[GRID_MAX_DIM*GRID_MAX_DIM];
+    for(int i=0; i<grid_dim*grid_dim; i++)
         path[i] = 0;
 
-    int xp = GRID_DIM/2, yp = GRID_DIM-1;
+    int xp = grid_dim/2, yp = grid_dim-1;
     int to_x, to_y;
     pathfinding(path, grid, xp, yp, to_x, to_y);
 
@@ -187,21 +189,21 @@ void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
 
     drive_pub.publish(m);
 
-    //print_map(grid, GRID_DIM);
+    //print_map(grid, grid_dim);
     nav_msgs::OccupancyGrid grid_p;
     grid_p.info.resolution = 0.1;      // float32
-    grid_p.info.width      = GRID_DIM; // uint32
-    grid_p.info.height     = GRID_DIM; // uint32
-    std::vector<signed char> vgrd(grid, grid+(GRID_DIM*GRID_DIM));
+    grid_p.info.width      = grid_dim; // uint32
+    grid_p.info.height     = grid_dim; // uint32
+    std::vector<signed char> vgrd(grid, grid+(grid_dim*grid_dim));
     grid_p.data = vgrd;
     map_pub.publish(grid_p);
 
     /*
     nav_msgs::OccupancyGrid path_p;
     path_p.info.resolution = 0.1;      // float32
-    path_p.info.width      = GRID_DIM; // uint32
-    path_p.info.height     = GRID_DIM; // uint32
-    std::vector<signed char> vpth(path, path+(GRID_DIM*GRID_DIM));
+    path_p.info.width      = grid_dim; // uint32
+    path_p.info.height     = grid_dim; // uint32
+    std::vector<signed char> vpth(path, path+(grid_dim*grid_dim));
     path_p.data = vpth;
     path_pub.publish(path_p);
     */
