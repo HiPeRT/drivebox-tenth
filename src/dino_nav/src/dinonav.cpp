@@ -1,10 +1,5 @@
 #include <iostream>
 #include <math.h>
-#include <allegro5/allegro.h>
-#include <allegro5/allegro_primitives.h>
-#include <allegro5/allegro_font.h>
-#include <allegro5/allegro_ttf.h>
-#include <cursesp.h>
 
 #include "ros/ros.h"
 #include "race/drive_param.h"
