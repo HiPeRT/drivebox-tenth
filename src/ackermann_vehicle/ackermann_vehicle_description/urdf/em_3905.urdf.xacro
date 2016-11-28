@@ -45,8 +45,8 @@ limitations under the License.
        along the y axis, and chassis_height along the z axis. -->
   <xacro:property name="chassis_length" value="0.258"/>
   <xacro:property name="chassis_width" value="0.168"/>
-  <xacro:property name="chassis_height" value="0.01"/>
-  <xacro:property name="chassis_mass" value="2.788"/>
+  <xacro:property name="chassis_height" value="0.05"/>
+  <xacro:property name="chassis_mass" value="3.5"/>
 
   <!-- battery_dist is the distance between the inner edges of the
        batteries. battery_comp_depth is the battery compartment depth.
@@ -68,7 +68,7 @@ limitations under the License.
        axle_length. -->
   <xacro:property name="hub_dia" value="0.09652"/>
   <xacro:property name="tire_dia" value="0.14605"/>
-  <xacro:property name="tire_width" value="0.0889"/>
+  <xacro:property name="tire_width" value="0.06"/>
   <xacro:property name="hex_hub_depth" value="0.01445"/>
   <xacro:property name="wheel_mass" value="0.29"/>
 
@@ -76,7 +76,7 @@ limitations under the License.
        the shock absorbers are fully extended. axle_length is the distance
        from a U joint to the corresponding hex hub. wheel_travel is the
        vertical wheel travel. -->
-  <xacro:property name="wheelbase" value="0.335"/>
+  <xacro:property name="wheelbase" value="0.42"/>
   <xacro:property name="hex_hub_dist" value="0.365"/>
   <xacro:property name="axle_length" value="0.03"/>
   <xacro:property name="wheel_travel" value="0.084"/>
@@ -86,7 +86,7 @@ limitations under the License.
        shock_stroke is 0.028575 meters. shock_spring_constant, an approximation
        of a Traxxas Ultra Shock shock absorber spring's constant, is
        437.817 N/m. -->
-  <xacro:property name="shock_eff_limit" value="12.5106"/>
+  <xacro:property name="shock_eff_limit" value="22.5106"/>
   <xacro:property name="shock_vel_limit" value="1000"/>
 
   <!-- The specifications for a Titan(R) 550 motor could not be found, so the
@@ -112,12 +112,12 @@ limitations under the License.
   <xacro:property name="servo_stall_torque" value="0.5649"/>
   <xacro:property name="servo_no_load_speed" value="4.553"/>
 
-  <material name="battery_mat">
+  <!--material name="battery_mat">
     <color rgba="0 0 1 1"/>
   </material>
   <material name="chassis_mat">
     <color rgba="0.5 0.5 0.5 1"/>
-  </material>
+  </material-->
 
   <!-- Null inertial element. This is needed to make the model work with
        Gazebo. -->

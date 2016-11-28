@@ -5,8 +5,8 @@
       <author>Blender User</author>
       <authoring_tool>Blender 2.78.0</authoring_tool>
     </contributor>
-    <created>2016-11-28T23:49:07</created>
-    <modified>2016-11-28T23:49:07</modified>
+    <created>2016-11-29T00:18:40</created>
+    <modified>2016-11-29T00:18:40</modified>
     <unit name="meter" meter="1"/>
     <up_axis>Z_UP</up_axis>
   </asset>
@@ -227,7 +227,7 @@
               <color sid="ambient">0 0 0 1</color>
             </ambient>
             <diffuse>
-              <color sid="diffuse">0.008869847 0.008869847 0.008869847 1</color>
+              <color sid="diffuse">0.1386838 0.1386838 0.1386838 1</color>
             </diffuse>
             <specular>
               <color sid="specular">0.125 0.125 0.125 1</color>
@@ -413,7 +413,7 @@
         <instance_light url="#Lamp_001-light"/>
       </node>
       <node id="back" name="back" type="NODE">
-        <matrix sid="transform">-2.72066e-5 -5.27013e-4 -3.63492e-7 -0.2083733 5.26948e-4 -2.71975e-5 -8.33058e-6 0.002301553 8.30078e-6 -7.92451e-7 5.27649e-4 0.04747041 0 0 0 1</matrix>
+        <matrix sid="transform">-2.72066e-5 -5.27013e-4 -3.63492e-7 -0.2083733 5.26948e-4 -2.71975e-5 -8.33058e-6 0.002301553 8.30078e-6 -7.92451e-7 5.27649e-4 0.0265863 0 0 0 1</matrix>
         <instance_geometry url="#ID1799-mesh" name="back">
           <bind_material>
             <technique_common>
@@ -423,7 +423,7 @@
         </instance_geometry>
       </node>
       <node id="base" name="base" type="NODE">
-        <matrix sid="transform">-2.72066e-5 -5.27013e-4 -3.63492e-7 -0.04677412 5.26948e-4 -2.71975e-5 -8.33058e-6 0.002793133 8.30078e-6 -7.92451e-7 5.27649e-4 0.0251497 0 0 0 1</matrix>
+        <matrix sid="transform">-2.72066e-5 -5.27013e-4 -3.63492e-7 -0.04677412 5.26948e-4 -2.71975e-5 -8.33058e-6 0.002793133 8.30078e-6 -7.92451e-7 5.27649e-4 0.004265586 0 0 0 1</matrix>
         <instance_geometry url="#ID1805-mesh" name="base">
           <bind_material>
             <technique_common>
@@ -433,7 +433,7 @@
         </instance_geometry>
       </node>
       <node id="bump" name="bump" type="NODE">
-        <matrix sid="transform">-2.72066e-5 -5.27013e-4 -3.63492e-7 0.3264543 5.26948e-4 -2.71975e-5 -8.33058e-6 0.005908092 8.30078e-6 -7.92451e-7 5.27649e-4 0.02029072 0 0 0 1</matrix>
+        <matrix sid="transform">-2.72066e-5 -5.27013e-4 -3.63492e-7 0.3264543 5.26948e-4 -2.71975e-5 -8.33058e-6 0.005908092 8.30078e-6 -7.92451e-7 5.27649e-4 -5.93392e-4 0 0 0 1</matrix>
         <instance_geometry url="#ID2137-mesh" name="bump">
           <bind_material>
             <technique_common>
@@ -443,7 +443,7 @@
         </instance_geometry>
       </node>
       <node id="front" name="front" type="NODE">
-        <matrix sid="transform">-2.72066e-5 -5.27013e-4 -3.63492e-7 0.203312 5.26948e-4 -2.71975e-5 -8.33058e-6 0.005681174 8.30078e-6 -7.92451e-7 5.27649e-4 0.04303896 0 0 0 1</matrix>
+        <matrix sid="transform">-2.72066e-5 -5.27013e-4 -3.63492e-7 0.203312 5.26948e-4 -2.71975e-5 -8.33058e-6 0.005681174 8.30078e-6 -7.92451e-7 5.27649e-4 0.02215485 0 0 0 1</matrix>
         <instance_geometry url="#ID2345-mesh" name="front">
           <bind_material>
             <technique_common>
