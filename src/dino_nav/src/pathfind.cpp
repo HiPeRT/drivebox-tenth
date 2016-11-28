@@ -8,8 +8,7 @@
 #include "dinonav.h"
 #include "pathfind.h"
 
-#define STOP_COST 15
-
+extern int stop_cost;
 
 static void eject(nodo * &testa, nodo* &coda, int &x, int &y)
 {
@@ -79,7 +78,7 @@ bool gridcheck(int path[], int grid[], int ox, int oy, int x, int y) {
 
 void pathfinding(int path[], int grid[], int xp, int yp, int &xa, int &ya)
 {
-
+    
     //Algoritmo BFS:
     nodo *testa = NULL;
     nodo *coda = NULL;
@@ -144,7 +143,7 @@ void pathfinding(int path[], int grid[], int xp, int yp, int &xa, int &ya)
         }
         setgrid(grid, x, y, 10);
 
-        if(min_val <= STOP_COST) {
+        if(min_val <= stop_cost) {
             xa = x;
             ya = y;
             return;

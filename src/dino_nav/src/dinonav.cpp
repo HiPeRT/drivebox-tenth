@@ -16,6 +16,7 @@ ros::Publisher drive_pub, map_pub; //path_pub;
 
 float speed = 0;
 int inflation = 0;
+int stop_cost = 15;
 
 void print_map(int grid[], int size) {
 
@@ -33,9 +34,10 @@ void print_map(int grid[], int size) {
 }
 
 void reconf(dino_nav::DinonavConfig &config, uint32_t level) {
-  ROS_INFO("Reconfigure Request: %d", config.speed);
+  ROS_INFO("Reconfigure Request");
   speed = config.speed;
   inflation = config.inflation;
+  stop_cost = config.stop_cost;
 }
 
 /**
