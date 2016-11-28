@@ -15,10 +15,12 @@
 ros::Publisher drive_pub, map_pub; //path_pub;
 
 float speed = 0;
+int inflation = 0;
 
 void reconf(dino_nav::DinonavConfig &config, uint32_t level) {
   ROS_INFO("Reconfigure Request: %d", config.speed);
   speed = config.speed;
+  inflation = config.inflation;
 }
 
 /**
@@ -132,7 +134,7 @@ void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
         int grid_x = x / cell_l;
         int grid_y = y / cell_l;
         if(setgrid(grid, grid_x, grid_y, 1)) {
-            inflate(grid, grid_x, grid_y, 3);
+            inflate(grid, grid_x, grid_y, inflation);
 
             if(last_x > 0 && (last_x != grid_x || last_y != grid_y)) {
                 grid_line(grid, grid_x, grid_y, last_x, last_y);
