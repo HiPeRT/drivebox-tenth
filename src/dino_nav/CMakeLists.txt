@@ -6,9 +6,9 @@ find_package(catkin REQUIRED COMPONENTS roscpp rospy std_msgs nav_msgs genmsg ra
 find_package(message_generation)
 
 find_package(PkgConfig)
-pkg_search_module(ALLEGRO5 REQUIRED allegro-5.0)
-pkg_search_module(ALLEGRO_PRIMITIVES REQUIRED allegro_primitives-5.0)
-pkg_search_module(ALLEGRO_TTF REQUIRED allegro_ttf-5.0)
+pkg_search_module(ALLEGRO5 allegro-5.0)
+pkg_search_module(ALLEGRO_PRIMITIVES allegro_primitives-5.0)
+pkg_search_module(ALLEGRO_TTF allegro_ttf-5.0)
 
 generate_dynamic_reconfigure_options(
   cfg/Dinonav.cfg
