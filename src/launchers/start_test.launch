@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+
+<launch>
+	<remap from="imu" to="imu/data"/>
+
+	<param name="use_sim_time" value="true"/>
+	<node pkg="rosbag" type="play" name="amcl_test" output="screen" args="--clock $(find navigation_base)/test/lica.bag --delay=5"/>
+
+	<!--node name="static_tf_laser" pkg="tf" type="static_transform_publisher" args="-0.12 0 0.17 0 0 0 /footprint /laser 100" />
+	<node name="static_tf_imu" pkg="tf" type="static_transform_publisher" args="0.10 0.04 0.07 0 0 0 /footprint /base_imu_link 100" />
+	<node name="static_tf_zed" pkg="tf" type="static_transform_publisher" args="0.20 0 0.05 0 0 0 /footprint /zed_initial_frame 100" /-->
+
+	<node name="map_server" pkg="map_server" type="map_server" args="$(find mapping)/maps/lica_track.yaml"/>
+
+	<include file="$(find navigation_base)/launch/amcl_loc.launch" />
+
+	<include file="$(find navigation_base)/launch/navigation.launch" />
+
+	<node name="cmd_to_drive" pkg="navigation_base" type="cmd_to_driveparam.py"/>
+
+	<!--node name="rviz" pkg="rviz" type="rviz"/-->
+</launch>
+
+
+

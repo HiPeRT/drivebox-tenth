@@ -1,0 +1,7 @@
+build/
+devel/
+.idea
+src/.idea
+.catkin_workspace
+*.pyc
+\#*\#

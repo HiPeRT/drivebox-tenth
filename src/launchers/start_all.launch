@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+
+<launch>
+	<include file="$(find ackermann_vehicle_gazebo)/launch/ackermann_vehicle.launch" />
+
+	<node name="dino_nav" pkg="dino_nav" type="dinonav"/>
+</launch>
+
+
+
