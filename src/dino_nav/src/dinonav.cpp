@@ -18,6 +18,7 @@ float speed = 0;
 int inflation = 0;
 int stop_cost = 15;
 int grid_dim = 100;
+bool enable = true;
 
 void print_map(int grid[], int size) {
 
@@ -40,6 +41,7 @@ void reconf(dino_nav::DinonavConfig &config, uint32_t level) {
   inflation = config.inflation;
   stop_cost = config.stop_cost;
   grid_dim = config.grid_dim;
+  enable = config.enable;
 }
 
 /**
@@ -75,7 +77,7 @@ void grid_line(int grid[], int x1, int y1, int x2, int y2) {
 bool setgrid(int grid[], int x, int y, int value) {
     int pos = y*grid_dim + x;
 
-    if(x<0 || pos <0 || pos >= grid_dim*grid_dim)
+    if(x<0 || x >= grid_dim || y<0 || y >= grid_dim)
         return false;
     grid[pos] = value;
     return true;
@@ -84,7 +86,7 @@ bool setgrid(int grid[], int x, int y, int value) {
 int getgrid(int grid[], int x, int y) {
     int pos = y*grid_dim + x;
 
-    if(x<0 || pos <0 || pos >= grid_dim*grid_dim)
+    if(x<0 || x >= grid_dim || y<0 || y >= grid_dim)
         return -1;
     return grid[pos];
 }
@@ -99,14 +101,8 @@ void inflate(int grid[], int x, int y, int val) {
     if(val == 0)
         return;
 
-    setgrid(grid, x-1, y-1, 1);
-    setgrid(grid, x-1, y, 1);
-    setgrid(grid, x-1, y+1, 1);
-    setgrid(grid, x+1, y-1, 1);
-    setgrid(grid, x+1, y, 1);
-    setgrid(grid, x+1, y+1, 1);
-    setgrid(grid, x, y-1, 1);
-    setgrid(grid, x, y+1, 1);
+    if(getgrid(grid, x, y) != 1)
+        setgrid(grid, x, y, 2);
 
     inflate(grid, x-1, y-1, val -1);
     inflate(grid, x-1, y, val -1);
@@ -170,24 +166,28 @@ void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
     for(int i=0; i<grid_dim*grid_dim; i++)
         path[i] = 0;
 
-    int xp = grid_dim/2, yp = grid_dim-1;
+    int car_length = (view_l/100)*4 / cell_l;
+    int xp = grid_dim/2, yp = grid_dim - car_length;
     int to_x, to_y;
     pathfinding(path, grid, xp, yp, to_x, to_y);
+    grid[to_y*grid_dim + to_x] = 100;
 
-
-    //get x and y for start and goal fro cells position
+    //get x and y for start and goal from cells position
     float x_part = view_x + xp*cell_l + cell_l/2,   y_part = view_y + yp*cell_l + cell_l/2;
-    float x_goal = view_x + to_x*cell_l + cell_l/2, y_goal = view_y + to_y*cell_l + cell_l/2;
+    float x_goal = view_x + to_x*cell_l + cell_l/2, y_goal = view_y + to_y*cell_l + cell_l/2;    
 
-    //compute angle and publish drive message 
-    float ang = atan2(y_goal - y_part, x_goal - x_part)*180/M_PI +90;
-    race::drive_param m;
-    m.velocity = speed;
-    m.angle = ang;
-    if(m.angle >  100) m.angle=100;
-    if(m.angle < -100) m.angle=-100;
+    if(enable) {
+        //compute angle and publish drive message 
+        float ang = atan2(y_goal - y_part, x_goal - x_part)*180/M_PI +90;
 
-    drive_pub.publish(m);
+        race::drive_param m;
+        m.velocity = speed;
+        m.angle = ang;
+        if(m.angle >  100) m.angle=100;
+        if(m.angle < -100) m.angle=-100;
+
+        drive_pub.publish(m);
+    }
 
     //print_map(grid, grid_dim);
     nav_msgs::OccupancyGrid grid_p;

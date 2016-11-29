@@ -4,6 +4,9 @@
 	<include file="$(find ackermann_vehicle_gazebo)/launch/ackermann_vehicle.launch" />
 
 	<node name="dino_nav" pkg="dino_nav" type="dinonav"/>
+	<node name="dino_view" pkg="dino_nav" type="viewer"/>
+	<node name="reconf" pkg="rqt_reconfigure" type="rqt_reconfigure"/>
+
 </launch>
 
 

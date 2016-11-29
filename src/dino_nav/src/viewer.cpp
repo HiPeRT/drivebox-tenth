@@ -25,6 +25,7 @@ void map_recv(const nav_msgs::OccupancyGrid::ConstPtr& msg) {
     ALLEGRO_COLOR quad_col = al_map_rgba_f(0,1.0f,0, 1.0f);
     ALLEGRO_COLOR path_col = al_map_rgba_f(0,1.0f*alpha,1.0f*alpha,alpha);
     alpha = 0.1f;
+    ALLEGRO_COLOR infl_col = al_map_rgba_f(1.0f*alpha,1.0f*alpha, 0, alpha);
     ALLEGRO_COLOR quad_grid = al_map_rgba_f(0,1.0f*alpha,0,alpha);
 
     float view_l = 512;
@@ -42,24 +43,45 @@ void map_recv(const nav_msgs::OccupancyGrid::ConstPtr& msg) {
 
     al_draw_rectangle(view_x, view_y, view_x + view_l, view_y + view_l, quad_col, 1);
 
+    int to_x, to_y;
+
     for(int i=0; i<grid_dim; i++) {
         for (int j = 0; j < grid_dim; j++) {
-            if (grid[i*grid_dim +j] == 1) {
-                al_draw_filled_rectangle(view_x + cell_l * j, view_y + cell_l * i, view_x + cell_l * (j + 1),
-                                         view_y + cell_l * (i + 1), obst_col);
+            int val = grid[i*grid_dim +j];
+            ALLEGRO_COLOR col;
+
+            if (val == 1) {
+                col = obst_col;
+            } else if(val == 2) {
+                col = infl_col;  
+            } else if (val == 10) {
+                col = path_col;
+            } else if (val == 100) {
+                col = scan_col;
+                to_x = j;
+                to_y = i;
+            } else {
+                continue;
             }
-            if (grid[i*grid_dim +j] == 10) {
-                al_draw_filled_rectangle(view_x + cell_l * j, view_y + cell_l * i, view_x + cell_l * (j + 1),
-                                         view_y + cell_l * (i + 1), path_col);
-            }
+
+            al_draw_filled_rectangle(   view_x + cell_l * j, view_y + cell_l * i, view_x + cell_l * (j + 1),
+                                        view_y + cell_l * (i + 1), col);
         }
     }
-
-    /*
+    
+    int car_length = (view_l/100)*4 / cell_l;
+    int xp = grid_dim/2, yp = grid_dim - car_length;
+    //get x and y for start and goal from cells position
     float x_part = view_x + xp*cell_l + cell_l/2,   y_part = view_y + yp*cell_l + cell_l/2;
     float x_goal = view_x + to_x*cell_l + cell_l/2, y_goal = view_y + to_y*cell_l + cell_l/2;
+    
+    float car_lenght = view_l/100*4;
+    float car_width = view_l/100*3;
+    al_draw_rectangle(  view_x + cell_l/2 + view_l/2 - car_width/2, view_y + view_l, 
+                        view_x + cell_l/2 + view_l/2 + car_width/2, view_y + view_l - car_lenght, 
+                        al_map_rgb(255, 255, 0),1);
     al_draw_line(x_part, y_part, x_goal, y_goal, scan_col, 2);
-    */
+
     al_flip_display();
 }
 

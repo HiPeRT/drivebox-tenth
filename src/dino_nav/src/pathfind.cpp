@@ -58,7 +58,7 @@ int bigger_x, bigger_y, bigger_value;
 bool gridcheck(int path[], int grid[], int ox, int oy, int x, int y) {
 
     int pos = y*grid_dim + x;
-    if(x<0 || pos <0 || pos >= grid_dim*grid_dim)
+    if(x<0 || x >= grid_dim || y<0 || y >= grid_dim)
         return false;
 
     if (grid[pos] == 0 && path[pos] == 0) {
