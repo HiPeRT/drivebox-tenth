@@ -94,24 +94,24 @@ int getgrid(int grid[], int x, int y) {
 /**
     inflate a point with the given spread
           X X X
-    X ->  X X X   example with value = 1
+    X ->  X X X   example with n = 1
           X X X
 */
-void inflate(int grid[], int x, int y, int val) {
-    if(val == 0)
+void inflate(int grid[], int x, int y, int val, int n) {
+    if(n == 0)
         return;
 
     if(getgrid(grid, x, y) != 1)
-        setgrid(grid, x, y, 2);
+        setgrid(grid, x, y, val);
 
-    inflate(grid, x-1, y-1, val -1);
-    inflate(grid, x-1, y, val -1);
-    inflate(grid, x-1, y+1, val -1);
-    inflate(grid, x+1, y-1, val -1);
-    inflate(grid, x+1, y, val -1);
-    inflate(grid, x+1, y+1, val -1);
-    inflate(grid, x, y-1, val -1);
-    inflate(grid, x, y+1, val -1);
+    inflate(grid, x-1, y-1, val, n -1);
+    inflate(grid, x-1, y, val, n -1);
+    inflate(grid, x-1, y+1, val, n -1);
+    inflate(grid, x+1, y-1, val, n -1);
+    inflate(grid, x+1, y, val, n -1);
+    inflate(grid, x+1, y+1, val, n -1);
+    inflate(grid, x, y-1, val, n -1);
+    inflate(grid, x, y+1, val, n -1);
 }
 
 /**
@@ -149,7 +149,7 @@ void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
         int grid_x = x / cell_l;
         int grid_y = y / cell_l;
         if(setgrid(grid, grid_x, grid_y, 1)) {
-            inflate(grid, grid_x, grid_y, inflation);
+            inflate(grid, grid_x, grid_y, 2, inflation);
 
             if(last_x > 0 && (last_x != grid_x || last_y != grid_y)) {
                 grid_line(grid, grid_x, grid_y, last_x, last_y);
@@ -168,6 +168,7 @@ void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
 
     int car_length = (view_l/100)*4 / cell_l;
     int xp = grid_dim/2, yp = grid_dim - car_length;
+    inflate(grid, xp, yp, 0, 2);
     int to_x, to_y;
     pathfinding(path, grid, xp, yp, to_x, to_y);
     grid[to_y*grid_dim + to_x] = 100;
