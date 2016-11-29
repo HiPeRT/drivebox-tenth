@@ -72,6 +72,37 @@ void grid_line(int grid[], int x1, int y1, int x2, int y2) {
 }
 
 /**
+    geterate a line in a matrix from point 1 to 2
+*/
+bool grid_line_control(int grid[], int x1, int y1, int x2, int y2) {
+
+    int dx = x1 - x2;
+    int dy = y1 - y2;
+    int steps;
+
+    if (abs(dx) > abs(dy))
+        steps = abs(dx);
+    else
+        steps = abs(dy);
+
+    float x_inc = -(float)dx / (float) steps;
+    float y_inc = -(float)dy / (float) steps;
+
+    float x = x1, y = y1;
+    for(int v=0; v < steps; v++)
+    {
+        x = x + x_inc;
+        y = y + y_inc;
+        int xx = x, yy = y;
+        int val = getgrid(grid, xx, yy);
+        if(val != 0)
+            return false;
+    }
+    return true;
+}
+
+
+/**
     set a grid to value in given position
 */
 bool setgrid(int grid[], int x, int y, int value) {
@@ -168,7 +199,7 @@ void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
 
     int car_length = (view_l/100)*4 / cell_l;
     int xp = grid_dim/2, yp = grid_dim - car_length;
-    inflate(grid, xp, yp, 0, 2);
+    inflate(grid, xp, yp, 0, 3);
     int to_x, to_y;
     pathfinding(path, grid, xp, yp, to_x, to_y);
     grid[to_y*grid_dim + to_x] = 100;

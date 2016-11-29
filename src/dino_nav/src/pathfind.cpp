@@ -111,7 +111,12 @@ void pathfinding(int path[], int grid[], int xp, int yp, int &xa, int &ya)
 
     //find path
     int x = bigger_x, y = bigger_y;
-    while(x != xp || y != yp) {
+    int iter = 0;
+    point_t cur_path[500];
+    int path_l= 0;
+
+    while(iter <500 && (x != xp || y != yp) ) {
+        iter++;
 
         int a[8];
         a[0] = gridval(path, x+1, y-1);
@@ -142,13 +147,27 @@ void pathfinding(int path[], int grid[], int xp, int yp, int &xa, int &ya)
             case 6: x;      y -= 1; break;
             case 7: x;      y += 1; break;
         }
-        setgrid(grid, x, y, 10);
-
-        if(min_val <= stop_cost) {
-            xa = x;
-            ya = y;
-            return;
-        }
+        cur_path[path_l].x = x;
+        cur_path[path_l].y = y;
+        path_l++;
     }
 
+    xa = bigger_x;
+    ya = bigger_y;
+    for(int i=path_l; i>=0; i--) {
+        int x = cur_path[i].x;
+        int y = cur_path[i].y;
+        if(grid_line_control(grid, xp, yp, x, y)) {
+            xa = x;
+            ya = y;
+        } else {
+            break;
+        }
+    }
+    
+    for(int i=0; i<path_l; i++) {
+        int x = cur_path[i].x;
+        int y = cur_path[i].y;
+        setgrid(grid, x, y, 10);
+    }
 }
