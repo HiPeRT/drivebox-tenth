@@ -95,8 +95,14 @@ bool grid_line_control(int grid[], int x1, int y1, int x2, int y2) {
         y = y + y_inc;
         int xx = x, yy = y;
         int val = getgrid(grid, xx, yy);
-        if(val != 0)
+        int val1 = getgrid(grid, xx + 1, yy);
+        int val2 = getgrid(grid, xx - 1, yy);
+        if(val == 1 || val == 2 || val1 == 1 || val1 == 2 || val2 == 1 || val2 == 2)
             return false;
+
+        //setgrid(grid, xx +1, yy, 10);
+        //setgrid(grid, xx -1, yy, 10);
+        //setgrid(grid, xx, yy, 10);
     }
     return true;
 }
@@ -208,10 +214,13 @@ void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
     float x_part = view_x + xp*cell_l + cell_l/2,   y_part = view_y + yp*cell_l + cell_l/2;
     float x_goal = view_x + to_x*cell_l + cell_l/2, y_goal = view_y + to_y*cell_l + cell_l/2;    
 
-    if(enable) {
-        //compute angle and publish drive message 
-        float ang = atan2(y_goal - y_part, x_goal - x_part)*180/M_PI +90;
+    //compute angle and publish drive message 
+    float ang = atan2(y_goal - y_part, x_goal - x_part)*180/M_PI +90;
+    if(ang > 180) ang -= 360;
+    // ang : 45 = new_ang : 100
+    ang = ang*100/45;
 
+    if(enable) {
         race::drive_param m;
         m.velocity = speed;
         m.angle = ang;

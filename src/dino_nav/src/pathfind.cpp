@@ -5,6 +5,7 @@
 #include <math.h>
 #include <stdio.h>
 
+#include "ros/ros.h"
 #include "dinonav.h"
 #include "pathfind.h"
 
@@ -114,6 +115,7 @@ void pathfinding(int path[], int grid[], int xp, int yp, int &xa, int &ya)
     int iter = 0;
     point_t cur_path[500];
     int path_l= 0;
+    int n_p = 0;
 
     while(iter <500 && (x != xp || y != yp) ) {
         iter++;
@@ -147,31 +149,49 @@ void pathfinding(int path[], int grid[], int xp, int yp, int &xa, int &ya)
             case 6: x;      y -= 1; break;
             case 7: x;      y += 1; break;
         }
+
+        if(n_p == 0 && min_val <= stop_cost)
+            n_p = path_l;
+
         cur_path[path_l].x = x;
         cur_path[path_l].y = y;
         path_l++;
     }
 
-    int n_p = 0;
-    for(int i=path_l; i>=0; i--) {
-        int x = cur_path[i].x;
-        int y = cur_path[i].y;
-        if(grid_line_control(grid, xp, yp, x, y)) {
-            n_p = i;
-        } else {
-            break;
-        }
-    }
-
-    if(n_p > 5) n_p -= 3;
-    if(n_p < 3 && path_l >= 3) n_p = 3;
- 
-    xa = cur_path[n_p].x;
-    ya = cur_path[n_p].y;
-    
+    //expand path
     for(int i=0; i<path_l; i++) {
         int x = cur_path[i].x;
         int y = cur_path[i].y;
         setgrid(grid, x, y, 10);
+
+        if(getgrid(grid, x+1, y) == 0)
+            setgrid(grid, x+1, y, 10);
+        else
+            if(getgrid(grid, x-2, y) == 0) {
+                setgrid(grid, x-2, y, 10);
+                cur_path[i].x = x-1;
+            }
+    
+        if(getgrid(grid, x-1, y) == 0)
+            setgrid(grid, x-1, y, 10);        
+        else
+            if(getgrid(grid, x+2, y) == 0) {
+                setgrid(grid, x+2, y, 10);
+                cur_path[i].x = x+1;
+            }
     }
+
+    //shortcuts path
+    for(int i=n_p; i<path_l; i++) {
+        int x = cur_path[i].x;
+        int y = cur_path[i].y;
+
+        if(grid_line_control(grid, xp, yp, x, y)) {
+            n_p = i;
+            break;
+        }
+    }
+    //printf("choosen p = %d - %d\n", n_p, path_l);
+    xa = cur_path[n_p].x;
+    ya = cur_path[n_p].y;
 }
