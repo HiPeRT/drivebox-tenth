@@ -402,7 +402,7 @@ limitations under the License.
 
   <link name="hokuyo_sensor_link" type="laser">
     <visual>
-      <origin xyz="0 0 -0.02" rpy="3.14 3.14 3.14"/>
+      <origin xyz="0 0 0" rpy="3.14 3.14 3.14"/>
       <geometry>
         <mesh filename="package://gazebo_plugins/test/multi_robot_scenario/meshes/laser/hokuyo.dae"/>
       </geometry>
@@ -415,7 +415,7 @@ limitations under the License.
     </collision>
   </link>
   <joint name="laser_to_base" type="fixed">
-    <origin xyz="-0.15 0 0.2"/>
+    <origin xyz="-0.15 0 0.13"/>
     <parent link="base_link" />
     <child link="hokuyo_sensor_link"/>
   </joint>
