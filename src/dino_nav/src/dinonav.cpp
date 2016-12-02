@@ -224,7 +224,7 @@ void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
         grid[i] = 0;
     gates_N = 0;
 
-    int last_x = -1, last_y = -1;
+    int last_x, last_y;
     double angle = msg->angle_max + M_PI*3/2;
     for(int i=0; i<size; i++) {
         float r = msg->ranges[i];
@@ -238,15 +238,15 @@ void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
         //coordinates of the corrispondent cell
         int grid_x = x / cell_l;
         int grid_y = y / cell_l;
-        if(setgrid(grid, grid_x, grid_y, 1)) {
-            inflate(grid, grid_x, grid_y, 2, inflation);
+        setgrid(grid, grid_x, grid_y, 1);
+        inflate(grid, grid_x, grid_y, 2, inflation);
 
-            if(last_x > 0 && (last_x != grid_x || last_y != grid_y)) {
-                grid_line(grid, grid_x, grid_y, last_x, last_y);
-            }
-            last_x = grid_x;
-            last_y = grid_y;
+        if(i>0 && (last_x != grid_x || last_y != grid_y)) {
+            grid_line(grid, grid_x, grid_y, last_x, last_y);
         }
+        last_x = grid_x;
+        last_y = grid_y;
+        
 
         angle -= msg->angle_increment;
     }
