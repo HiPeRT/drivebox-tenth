@@ -20,6 +20,9 @@ int stop_cost = 15;
 int grid_dim = 100;
 bool enable = true;
 
+point_t gates[64][2];
+int gates_N;
+
 void print_map(int grid[], int size) {
 
     for(int i=0; i<size; i++) {
@@ -48,6 +51,9 @@ void reconf(dino_nav::DinonavConfig &config, uint32_t level) {
     geterate a line in a matrix from point 1 to 2
 */
 void grid_line(int grid[], int x1, int y1, int x2, int y2) {
+    //gate search
+    int startGx = -1, startGy = -1;
+    int endGx = -1,   endGy = -1;
 
     int dx = x1 - x2;
     int dy = y1 - y2;
@@ -67,7 +73,24 @@ void grid_line(int grid[], int x1, int y1, int x2, int y2) {
         x = x + x_inc;
         y = y + y_inc;
         int xx = x, yy = y;
-        setgrid(grid, xx, yy, 1);
+        if(getgrid(grid, xx, yy) == 0) {
+            setgrid(grid, xx, yy, 3);
+            if(startGx == -1) {
+                startGx = xx; startGy = yy; 
+            } else {
+                endGx = xx; endGy = yy;
+            }
+        }
+    }
+
+    if(startGx != -1 && endGx != -1) {
+        point_t *limit = gates[gates_N];
+        limit[0].x = startGx;
+        limit[0].y = startGy;
+        limit[1].x = endGx;
+        limit[1].y = endGy;
+        gates_N++;
+        //printf("start: %d %d, end: %d %d\n", startGx, startGy, endGx, endGy);
     }
 }
 
@@ -151,6 +174,35 @@ void inflate(int grid[], int x, int y, int val, int n) {
     inflate(grid, x, y+1, val, n -1);
 }
 
+
+void choosegate(int px, int py, int &to_x, int &to_y) {
+
+    float dst = -1; //min dst
+    int gt = -1;
+
+    for(int i=0; i<gates_N; i++) {
+        for(int j=0; j<2; j++) {
+            
+            point_t p = gates[i][j];
+            float dx = px - p.x, dy = py - p.y; 
+            float d = sqrt(dx*dx + dy*dy); 
+            if(d > dst) {
+                dst = d;
+                gt = i;
+            }
+        }
+    }
+
+    if(gt != -1) {
+        point_t s = gates[gt][0];
+        point_t e = gates[gt][1];
+
+        to_x = (s.x + e.x)/2;
+        to_y = (s.y + e.y)/2;
+    } 
+}
+
+
 /**
     laserscan callback
 */
@@ -170,6 +222,7 @@ void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
     //init grid
     for(int i=0; i<grid_dim*grid_dim; i++)
         grid[i] = 0;
+    gates_N = 0;
 
     int last_x = -1, last_y = -1;
     double angle = msg->angle_max + M_PI*3/2;
@@ -200,13 +253,12 @@ void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
 
     //path grid
     int path[GRID_MAX_DIM*GRID_MAX_DIM];
-    for(int i=0; i<grid_dim*grid_dim; i++)
-        path[i] = 0;
 
     int car_length = (view_l/100)*4 / cell_l;
     int xp = grid_dim/2, yp = grid_dim - car_length;
     inflate(grid, xp, yp, 0, 3);
-    int to_x, to_y;
+    int to_x = -1, to_y = -1;
+    choosegate(xp, yp, to_x, to_y);
     pathfinding(path, grid, xp, yp, to_x, to_y);
     grid[to_y*grid_dim + to_x] = 100;
 

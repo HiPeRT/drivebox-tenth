@@ -24,6 +24,7 @@ void map_recv(const nav_msgs::OccupancyGrid::ConstPtr& msg) {
     ALLEGRO_COLOR obst_col = al_map_rgba_f(1.0f*alpha,1.0f*alpha, 0, alpha);
     ALLEGRO_COLOR quad_col = al_map_rgba_f(0,1.0f,0, 1.0f);
     ALLEGRO_COLOR path_col = al_map_rgba_f(0,1.0f*alpha,1.0f*alpha,alpha);
+    ALLEGRO_COLOR gate_col = al_map_rgba_f(1.0f*alpha,1.0f*alpha,1.0f*alpha,alpha);
     alpha = 0.1f;
     ALLEGRO_COLOR infl_col = al_map_rgba_f(1.0f*alpha,1.0f*alpha, 0, alpha);
     ALLEGRO_COLOR quad_grid = al_map_rgba_f(0,1.0f*alpha,0,alpha);
@@ -54,6 +55,8 @@ void map_recv(const nav_msgs::OccupancyGrid::ConstPtr& msg) {
                 col = obst_col;
             } else if(val == 2) {
                 col = infl_col;  
+            } else if(val == 3) {
+                col = gate_col;  
             } else if (val == 10) {
                 col = path_col;
             } else if (val == 100) {

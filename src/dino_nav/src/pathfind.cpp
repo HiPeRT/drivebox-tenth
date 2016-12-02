@@ -12,6 +12,8 @@
 extern int stop_cost;
 extern int grid_dim;
 
+const int MAX_ITER = 500;
+
 static void eject(nodo * &testa, nodo* &coda, int &x, int &y)
 {
     x = testa->x;
@@ -80,6 +82,8 @@ bool gridcheck(int path[], int grid[], int ox, int oy, int x, int y) {
 
 void pathfinding(int path[], int grid[], int xp, int yp, int &xa, int &ya)
 {
+    for(int i=0; i<grid_dim*grid_dim; i++)
+        path[i] = 0;
 
     //Algoritmo BFS:
     nodo *testa = NULL;
@@ -111,13 +115,20 @@ void pathfinding(int path[], int grid[], int xp, int yp, int &xa, int &ya)
     }
 
     //find path
-    int x = bigger_x, y = bigger_y;
+    int x,y;
+    if(xa == -1) {
+        x = bigger_x;
+        y = bigger_y;
+    } else {
+        x = xa;
+        y = ya;
+    }
     int iter = 0;
-    point_t cur_path[500];
+    point_t cur_path[MAX_ITER];
     int path_l= 0;
     int n_p = 0;
 
-    while(iter <500 && (x != xp || y != yp) ) {
+    while(iter <MAX_ITER && (x != xp || y != yp) ) {
         iter++;
 
         int a[8];
@@ -157,6 +168,15 @@ void pathfinding(int path[], int grid[], int xp, int yp, int &xa, int &ya)
         cur_path[path_l].y = y;
         path_l++;
     }
+    
+    if(iter >= MAX_ITER && xa != -1 && ya != -1) {
+        //recalc
+        xa = -1;
+        ya = -1;
+        pathfinding(path, grid, xp, yp, xa, ya);
+        return;
+    }
+    
 
     //expand path
     for(int i=0; i<path_l; i++) {
@@ -191,6 +211,7 @@ void pathfinding(int path[], int grid[], int xp, int yp, int &xa, int &ya)
             break;
         }
     }
+
     //printf("choosen p = %d - %d\n", n_p, path_l);
     xa = cur_path[n_p].x;
     ya = cur_path[n_p].y;
