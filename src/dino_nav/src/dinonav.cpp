@@ -21,6 +21,7 @@ float speed = 0;
 int inflation = 0;
 int stop_cost = 15;
 int grid_dim = 100;
+float zoom = 3;
 bool enable = true;
 
 float estimated_speed;
@@ -49,6 +50,7 @@ void reconf(dino_nav::DinonavConfig &config, uint32_t level) {
   inflation = config.inflation;
   stop_cost = config.stop_cost;
   grid_dim = config.grid_dim;
+  zoom = config.zoom;
   enable = config.enable;
 }
 
@@ -215,7 +217,7 @@ void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
     //ROS_INFO("Scan recived: [%f]", msg->scan_time);
 
     int size = msg->ranges.size();
-    int maxd = msg->range_max/8;
+    float maxd = zoom;
     int quad_l = maxd*2;
 
     float view_l = 512;
