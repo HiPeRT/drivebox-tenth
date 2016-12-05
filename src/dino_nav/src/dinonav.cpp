@@ -215,7 +215,7 @@ void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
     //ROS_INFO("Scan recived: [%f]", msg->scan_time);
 
     int size = msg->ranges.size();
-    int maxd = msg->range_max/4;
+    int maxd = msg->range_max/8;
     int quad_l = maxd*2;
 
     float view_l = 512;
@@ -287,11 +287,14 @@ void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
 
     if(enable) {
         race::drive_param m;
-        if(fabs(ang2 - ang) > 30 && estimated_speed > 1) {
+        if(fabs(ang2 - ang) > 30 && estimated_speed > 1.5) {
             m.velocity = -10;
             printf("BREAK!!!\n");
         } else {
-            m.velocity = speed;
+	    if(fabs(ang2 - ang) < 10 && estimated_speed < 3)
+        	m.velocity = speed*2;    
+	    else
+		m.velocity = speed;
         }
 
         m.angle = ang;
