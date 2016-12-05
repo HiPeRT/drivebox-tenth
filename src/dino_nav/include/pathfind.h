@@ -10,5 +10,7 @@ struct point_t {
     int x, y;
 };
 
-void pathfinding(int path[], int grid[], int xp, int yp, int &xa, int &ya);
+const int MAX_ITER = 500;
+
+int pathfinding(int path[], int grid[], int xp, int yp, int &xa, int &ya, point_t calc_path[]);
 

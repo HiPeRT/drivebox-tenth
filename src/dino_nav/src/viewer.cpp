@@ -52,7 +52,7 @@ void map_recv(const nav_msgs::OccupancyGrid::ConstPtr& msg) {
 
     al_draw_rectangle(view_x, view_y, view_x + view_l, view_y + view_l, quad_col, 1);
 
-    int to_x, to_y;
+    int to_x, to_y, to_x2, to_y2;
 
     for(int i=0; i<grid_dim; i++) {
         for (int j = 0; j < grid_dim; j++) {
@@ -71,6 +71,10 @@ void map_recv(const nav_msgs::OccupancyGrid::ConstPtr& msg) {
                 col = scan_col;
                 to_x = j;
                 to_y = i;
+            } else if (val == 101) {
+                col = scan_col;
+                to_x2 = j;
+                to_y2 = i;
             } else {
                 continue;
             }
@@ -93,6 +97,8 @@ void map_recv(const nav_msgs::OccupancyGrid::ConstPtr& msg) {
                         al_map_rgb(255, 255, 0),1);
     al_draw_line(x_part, y_part, x_goal, y_goal, scan_col, 2);
 
+    x_goal = view_x + to_x2*cell_l + cell_l/2, y_goal = view_y + to_y2*cell_l + cell_l/2;
+    al_draw_line(x_part, y_part, x_goal, y_goal, scan_col, 2);
 
     al_draw_textf(font, quad_col, view_x, view_y + view_l, 0, "%f", estimated_speed);
     al_flip_display();

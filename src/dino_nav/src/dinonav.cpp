@@ -13,6 +13,7 @@
 
 #include "dinonav.h"
 #include "pathfind.h"
+#include "common.h"
 
 ros::Publisher drive_pub, map_pub, speed_pub; //path_pub;
 
@@ -263,22 +264,36 @@ void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
     inflate(grid, xp, yp, 0, 3);
     int to_x = -1, to_y = -1;
     choosegate(xp, yp, to_x, to_y);
-    pathfinding(path, grid, xp, yp, to_x, to_y);
+    
+    point_t calc_path[MAX_ITER];
+    int path_idx = pathfinding(path, grid, xp, yp, to_x, to_y, calc_path);
     grid[to_y*grid_dim + to_x] = 100;
 
     //get x and y for start and goal from cells position
     float x_part = view_x + xp*cell_l + cell_l/2,   y_part = view_y + yp*cell_l + cell_l/2;
     float x_goal = view_x + to_x*cell_l + cell_l/2, y_goal = view_y + to_y*cell_l + cell_l/2;    
 
-    //compute angle and publish drive message 
-    float ang = atan2(y_goal - y_part, x_goal - x_part)*180/M_PI +90;
-    if(ang > 180) ang -= 360;
-    // ang : 45 = new_ang : 100
-    ang = ang*100/45;
+    //compute angle for the steer
+    float ang  = points_angle(x_part, y_part, x_goal, y_goal);
+    
+    //compute angle ahead for the speed modulation
+    int ah_idx = path_idx -4;
+    if(ah_idx < 0) ah_idx = 0;
+    point_t ahead_p = calc_path[ah_idx];
+    x_goal = view_x + ahead_p.x*cell_l + cell_l/2;
+    y_goal = view_y + ahead_p.y*cell_l + cell_l/2;    
+    grid[ahead_p.y*grid_dim + ahead_p.x] = 101;
+    float ang2 = points_angle(x_part, y_part, x_goal, y_goal);
 
     if(enable) {
         race::drive_param m;
-        m.velocity = speed;
+        if(fabs(ang2 - ang) > 30 && estimated_speed > 1) {
+            m.velocity = -10;
+            printf("BREAK!!!\n");
+        } else {
+            m.velocity = speed;
+        }
+
         m.angle = ang;
         if(m.angle >  100) m.angle=100;
         if(m.angle < -100) m.angle=-100;
