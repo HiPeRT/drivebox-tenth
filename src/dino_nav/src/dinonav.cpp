@@ -4,7 +4,9 @@
 #include "ros/ros.h"
 #include "race/drive_param.h"
 #include "sensor_msgs/LaserScan.h"
+#include "geometry_msgs/PoseStamped.h"
 #include "nav_msgs/OccupancyGrid.h"
+#include "std_msgs/Float32.h"
 
 #include <dynamic_reconfigure/server.h>
 #include <dino_nav/DinonavConfig.h>
@@ -12,13 +14,15 @@
 #include "dinonav.h"
 #include "pathfind.h"
 
-ros::Publisher drive_pub, map_pub; //path_pub;
+ros::Publisher drive_pub, map_pub, speed_pub; //path_pub;
 
 float speed = 0;
 int inflation = 0;
 int stop_cost = 15;
 int grid_dim = 100;
 bool enable = true;
+
+float estimated_speed;
 
 point_t gates[64][2];
 int gates_N;
@@ -303,6 +307,42 @@ void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
 }
 
 
+/**
+    PoseStamped callback
+*/
+void pose_recv(const geometry_msgs::PoseStamped::ConstPtr& msg) {
+    static geometry_msgs::Point old_pose;
+    static ros::Time old_time;
+    static bool init=false;
+    if(!init) {
+        old_pose.x = 0;
+        old_pose.y = 0;
+        old_pose.z = 0;
+        init = true;
+
+        old_time = msg->header.stamp;
+    }
+
+    geometry_msgs::Point pos = msg->pose.position;
+    ros::Time t = msg->header.stamp;
+
+    double dx = pos.x - old_pose.x;
+    double dy = pos.y - old_pose.y;
+    double dst = sqrt(dx*dx + dy*dy);
+    double dt = (t - old_time).toSec();
+
+    //update speed value
+    estimated_speed = dst/dt;
+    
+    old_pose = pos;
+    old_time = t;
+
+    std_msgs::Float32 m;
+    m.data = estimated_speed;
+    speed_pub.publish(m);
+}
+
+
 int main(int argc, char **argv) {
     /**
     * The ros::init() function needs to see argc and argv so that it can perform
@@ -338,9 +378,13 @@ int main(int argc, char **argv) {
     * is the number of messages that will be buffered up before beginning to throw
     * away the oldest ones.
     */
-    ros::Subscriber sub = n.subscribe("scan", 1, laser_recv);
+    ros::Subscriber ssub = n.subscribe("scan", 1, laser_recv);
+    ros::Subscriber psub = n.subscribe("pose_stamped", 1, pose_recv);
+
     drive_pub = n.advertise<race::drive_param>("drive_parameters", 1);
     map_pub = n.advertise<nav_msgs::OccupancyGrid>("dinonav/map", 1);
+    speed_pub = n.advertise<std_msgs::Float32>("dinonav/speed", 1);
+
     //path_pub = n.advertise<nav_msgs::OccupancyGrid>("dinonav/path", 1);
     /**
     * ros::spin() will enter a loop, pumping callbacks.  With this version, all

@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(dino_nav)
 
-find_package(catkin REQUIRED COMPONENTS roscpp rospy std_msgs nav_msgs genmsg race dynamic_reconfigure)
+find_package(catkin REQUIRED COMPONENTS roscpp rospy std_msgs nav_msgs geometry_msgs genmsg race dynamic_reconfigure)
 
 find_package(message_generation)
 

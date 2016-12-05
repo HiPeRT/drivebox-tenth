@@ -7,9 +7,17 @@
 
 #include "ros/ros.h"
 #include "nav_msgs/OccupancyGrid.h"
+#include "std_msgs/Float32.h"
 
 ALLEGRO_FONT *font;
 #define GRID_MAX_DIM 1000
+
+float estimated_speed = 0;
+
+void speed_recv(const std_msgs::Float32::ConstPtr& msg) {
+
+    estimated_speed = msg->data;
+}
 
 
 void map_recv(const nav_msgs::OccupancyGrid::ConstPtr& msg) {
@@ -85,6 +93,8 @@ void map_recv(const nav_msgs::OccupancyGrid::ConstPtr& msg) {
                         al_map_rgb(255, 255, 0),1);
     al_draw_line(x_part, y_part, x_goal, y_goal, scan_col, 2);
 
+
+    al_draw_textf(font, quad_col, view_x, view_y + view_l, 0, "%f", estimated_speed);
     al_flip_display();
 }
 
@@ -124,7 +134,9 @@ int main(int argc, char **argv) {
     * is the number of messages that will be buffered up before beginning to throw
     * away the oldest ones.
     */
-    ros::Subscriber sub = n.subscribe("dinonav/map", 1, map_recv);
+    ros::Subscriber m_sub = n.subscribe("dinonav/map", 1,   map_recv);
+    ros::Subscriber s_sub = n.subscribe("dinonav/speed", 1, speed_recv);
+
     /**
     * ros::spin() will enter a loop, pumping callbacks.  With this version, all
     * callbacks will be called from within this thread (the main one).  ros::spin()

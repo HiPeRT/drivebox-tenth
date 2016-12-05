@@ -501,13 +501,13 @@ limitations under the License.
       </geometry>
     </collision>
 
-    <!--visual>
+    <visual>
       <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
     <box size="${camera_link} ${camera_link} ${camera_link}"/>
       </geometry>
       <material name="red"/>
-    </visual-->
+    </visual>
     
     <inertial>
       <mass value="1e-5" />
@@ -539,7 +539,7 @@ limitations under the License.
           <stddev>0.007</stddev>
         </noise>
       </camera>
-      <!--plugin name="camera_controller" filename="libgazebo_ros_camera.so">
+      <plugin name="camera_controller" filename="libgazebo_ros_camera.so">
         <alwaysOn>true</alwaysOn>
         <updateRate>0.0</updateRate>
         <cameraName>top_cam</cameraName>
@@ -552,7 +552,7 @@ limitations under the License.
         <distortionK3>0.0</distortionK3>
         <distortionT1>0.0</distortionT1>
         <distortionT2>0.0</distortionT2>
-      </plugin-->
+      </plugin>
     </sensor>
   </gazebo>
 
