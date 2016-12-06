@@ -10,7 +10,6 @@
 #include "pathfind.h"
 
 extern int stop_cost;
-extern int grid_dim;
 
 static void eject(nodo * &testa, nodo* &coda, int &x, int &y)
 {
@@ -46,8 +45,10 @@ static void inject(nodo * &testa, nodo* &coda, int x, int y)
 
 }
 
-int gridval(int path[], int x, int y) {
-    int val = getgrid(path, x, y);
+int gridval(Grid path, int x, int y) {
+    
+    int val = path.get(x, y);
+
     if(val <= 0)
         return 999999; //as infinite
 
@@ -56,7 +57,7 @@ int gridval(int path[], int x, int y) {
 
 int bigger_x, bigger_y, bigger_value;
 
-bool gridcheck(int path[], int grid[], int ox, int oy, int x, int y) {
+bool gridcheck(int path[], int grid[], int ox, int oy, int x, int y, int grid_dim) {
 
     int pos = y*grid_dim + x;
     if(x<0 || x >= grid_dim || y<0 || y >= grid_dim)
@@ -78,10 +79,12 @@ bool gridcheck(int path[], int grid[], int ox, int oy, int x, int y) {
 
 
 
-int pathfinding(int path[], int grid[], int xp, int yp, int &xa, int &ya, point_t calc_path[])
+int pathfinding(Grid grid_, int xp, int yp, int &xa, int &ya, point_t calc_path[])
 {
-    for(int i=0; i<grid_dim*grid_dim; i++)
-        path[i] = 0;
+    Grid path_;
+
+    int *grid = grid_.getGrid(); 
+    int *path = path_.getGrid(); 
 
     //Algoritmo BFS:
     nodo *testa = NULL;
@@ -89,7 +92,7 @@ int pathfinding(int path[], int grid[], int xp, int yp, int &xa, int &ya, point_
 
     inject(testa, coda, xp, yp);
 
-    setgrid(path, xp, yp, 1);    //partenza
+    path_.set(xp, yp, 1);    //partenza
     bigger_x = xp;
     bigger_y = yp;
     bigger_value = 1;
@@ -99,16 +102,16 @@ int pathfinding(int path[], int grid[], int xp, int yp, int &xa, int &ya, point_
         int x, y;
         eject(testa, coda, x, y);
 
-        if(gridcheck(path, grid, x, y, x+1, y))
+        if(gridcheck(path, grid, x, y, x+1, y, grid_.grid_dim))
             inject(testa, coda, x+1, y);
 
-        if(gridcheck(path, grid, x, y, x-1, y))
+        if(gridcheck(path, grid, x, y, x-1, y, grid_.grid_dim))
             inject(testa, coda, x-1, y);
 
-        if(gridcheck(path, grid, x, y, x, y-1))
+        if(gridcheck(path, grid, x, y, x, y-1, grid_.grid_dim))
             inject(testa, coda, x, y-1);
 
-        if(gridcheck(path, grid, x, y, x, y+1))
+        if(gridcheck(path, grid, x, y, x, y+1, grid_.grid_dim))
             inject(testa, coda, x, y+1);
     }
 
@@ -129,14 +132,14 @@ int pathfinding(int path[], int grid[], int xp, int yp, int &xa, int &ya, point_
         iter++;
 
         int a[8];
-        a[0] = gridval(path, x+1, y-1);
-        a[1] = gridval(path, x+1, y);
-        a[2] = gridval(path, x+1, y+1);
-        a[3] = gridval(path, x-1, y-1);
-        a[4] = gridval(path, x-1, y);
-        a[5] = gridval(path, x-1, y+1);
-        a[6] = gridval(path, x,   y-1);
-        a[7] = gridval(path, x,   y+1);
+        a[0] = gridval(path_, x+1, y-1);
+        a[1] = gridval(path_, x+1, y);
+        a[2] = gridval(path_, x+1, y+1);
+        a[3] = gridval(path_, x-1, y-1);
+        a[4] = gridval(path_, x-1, y);
+        a[5] = gridval(path_, x-1, y+1);
+        a[6] = gridval(path_, x,   y-1);
+        a[7] = gridval(path_, x,   y+1);
 
         int min_id = 0;
         int min_val = a[0];
@@ -170,7 +173,7 @@ int pathfinding(int path[], int grid[], int xp, int yp, int &xa, int &ya, point_
         //recalc
         xa = -1;
         ya = -1;
-        return pathfinding(path, grid, xp, yp, xa, ya, calc_path);
+        return pathfinding(grid_, xp, yp, xa, ya, calc_path);
     }
     
 
@@ -178,21 +181,21 @@ int pathfinding(int path[], int grid[], int xp, int yp, int &xa, int &ya, point_
     for(int i=0; i<path_l; i++) {
         int x = calc_path[i].x;
         int y = calc_path[i].y;
-        setgrid(grid, x, y, 10);
+        grid_.set(x, y, 10);
 
-        if(getgrid(grid, x+1, y) == 0)
-            setgrid(grid, x+1, y, 10);
+        if(grid_.get(x+1, y) == 0)
+            grid_.set(x+1, y, 10);
         else
-            if(getgrid(grid, x-2, y) == 0) {
-                setgrid(grid, x-2, y, 10);
+            if(grid_.get(x-2, y) == 0) {
+                grid_.set(x-2, y, 10);
                 calc_path[i].x = x-1;
             }
     
-        if(getgrid(grid, x-1, y) == 0)
-            setgrid(grid, x-1, y, 10);        
+        if(grid_.get(x-1, y) == 0)
+            grid_.set(x-1, y, 10);        
         else
-            if(getgrid(grid, x+2, y) == 0) {
-                setgrid(grid, x+2, y, 10);
+            if(grid_.get(x+2, y) == 0) {
+                grid_.set(x+2, y, 10);
                 calc_path[i].x = x+1;
             }
     }
@@ -202,7 +205,7 @@ int pathfinding(int path[], int grid[], int xp, int yp, int &xa, int &ya, point_
         int x = calc_path[i].x;
         int y = calc_path[i].y;
 
-        if(grid_line_control(grid, xp, yp, x, y)) {
+        if(grid_.line_check(xp, yp, x, y)) {
             n_p = i;
             break;
         }

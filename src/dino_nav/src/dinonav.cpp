@@ -14,21 +14,20 @@
 #include "dinonav.h"
 #include "pathfind.h"
 #include "common.h"
+#include "Grid.h"
 
 ros::Publisher drive_pub, map_pub, speed_pub; //path_pub;
 
 float speed = 0;
 int inflation = 0;
 int stop_cost = 15;
-int grid_dim = 100;
 float zoom = 3;
 bool enable = true;
 
 float estimated_speed;
 
-point_t gates[64][2];
-int gates_N;
 
+/*
 void print_map(int grid[], int size) {
 
     for(int i=0; i<size; i++) {
@@ -43,170 +42,16 @@ void print_map(int grid[], int size) {
     }
     printf("\n");
 }
+*/
 
 void reconf(dino_nav::DinonavConfig &config, uint32_t level) {
   ROS_INFO("Reconfigure Request");
   speed = config.speed;
   inflation = config.inflation;
   stop_cost = config.stop_cost;
-  grid_dim = config.grid_dim;
+  //grid_dim = config.grid_dim;
   zoom = config.zoom;
   enable = config.enable;
-}
-
-/**
-    geterate a line in a matrix from point 1 to 2
-*/
-void grid_line(int grid[], int x1, int y1, int x2, int y2) {
-    //gate search
-    int startGx = -1, startGy = -1;
-    int endGx = -1,   endGy = -1;
-
-    int dx = x1 - x2;
-    int dy = y1 - y2;
-    int steps;
-
-    if (abs(dx) > abs(dy))
-        steps = abs(dx);
-    else
-        steps = abs(dy);
-
-    float x_inc = -(float)dx / (float) steps;
-    float y_inc = -(float)dy / (float) steps;
-
-    float x = x1, y = y1;
-    for(int v=0; v < steps; v++)
-    {
-        x = x + x_inc;
-        y = y + y_inc;
-        int xx = x, yy = y;
-        if(getgrid(grid, xx, yy) == 0) {
-            setgrid(grid, xx, yy, 3);
-            if(startGx == -1) {
-                startGx = xx; startGy = yy; 
-            } else {
-                endGx = xx; endGy = yy;
-            }
-        }
-    }
-
-    if(startGx != -1 && endGx != -1) {
-        point_t *limit = gates[gates_N];
-        limit[0].x = startGx;
-        limit[0].y = startGy;
-        limit[1].x = endGx;
-        limit[1].y = endGy;
-        gates_N++;
-        //printf("start: %d %d, end: %d %d\n", startGx, startGy, endGx, endGy);
-    }
-}
-
-/**
-    geterate a line in a matrix from point 1 to 2
-*/
-bool grid_line_control(int grid[], int x1, int y1, int x2, int y2) {
-
-    int dx = x1 - x2;
-    int dy = y1 - y2;
-    int steps;
-
-    if (abs(dx) > abs(dy))
-        steps = abs(dx);
-    else
-        steps = abs(dy);
-
-    float x_inc = -(float)dx / (float) steps;
-    float y_inc = -(float)dy / (float) steps;
-
-    float x = x1, y = y1;
-    for(int v=0; v < steps; v++)
-    {
-        x = x + x_inc;
-        y = y + y_inc;
-        int xx = x, yy = y;
-        int val = getgrid(grid, xx, yy);
-        int val1 = getgrid(grid, xx + 1, yy);
-        int val2 = getgrid(grid, xx - 1, yy);
-        if(val == 1 || val == 2 || val1 == 1 || val1 == 2 || val2 == 1 || val2 == 2)
-            return false;
-
-        //setgrid(grid, xx +1, yy, 10);
-        //setgrid(grid, xx -1, yy, 10);
-        //setgrid(grid, xx, yy, 10);
-    }
-    return true;
-}
-
-
-/**
-    set a grid to value in given position
-*/
-bool setgrid(int grid[], int x, int y, int value) {
-    int pos = y*grid_dim + x;
-
-    if(x<0 || x >= grid_dim || y<0 || y >= grid_dim)
-        return false;
-    grid[pos] = value;
-    return true;
-}
-
-int getgrid(int grid[], int x, int y) {
-    int pos = y*grid_dim + x;
-
-    if(x<0 || x >= grid_dim || y<0 || y >= grid_dim)
-        return -1;
-    return grid[pos];
-}
-
-/**
-    inflate a point with the given spread
-          X X X
-    X ->  X X X   example with n = 1
-          X X X
-*/
-void inflate(int grid[], int x, int y, int val, int n) {
-    if(n == 0)
-        return;
-
-    if(getgrid(grid, x, y) != 1)
-        setgrid(grid, x, y, val);
-
-    inflate(grid, x-1, y-1, val, n -1);
-    inflate(grid, x-1, y, val, n -1);
-    inflate(grid, x-1, y+1, val, n -1);
-    inflate(grid, x+1, y-1, val, n -1);
-    inflate(grid, x+1, y, val, n -1);
-    inflate(grid, x+1, y+1, val, n -1);
-    inflate(grid, x, y-1, val, n -1);
-    inflate(grid, x, y+1, val, n -1);
-}
-
-
-void choosegate(int px, int py, int &to_x, int &to_y) {
-
-    float dst = -1; //min dst
-    int gt = -1;
-
-    for(int i=0; i<gates_N; i++) {
-        for(int j=0; j<2; j++) {
-            
-            point_t p = gates[i][j];
-            float dx = px - p.x, dy = py - p.y; 
-            float d = sqrt(dx*dx + dy*dy); 
-            if(d > dst) {
-                dst = d;
-                gt = i;
-            }
-        }
-    }
-
-    if(gt != -1) {
-        point_t s = gates[gt][0];
-        point_t e = gates[gt][1];
-
-        to_x = (s.x + e.x)/2;
-        to_y = (s.y + e.y)/2;
-    } 
 }
 
 
@@ -223,13 +68,11 @@ void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
     float view_l = 512;
     float view_x = 10, view_y = 10;
 
-    float cell_l = view_l / float(grid_dim);
-    int grid[GRID_MAX_DIM*GRID_MAX_DIM];
+    Grid grid;
+    int grid_dim = grid.grid_dim;
 
-    //init grid
-    for(int i=0; i<grid_dim*grid_dim; i++)
-        grid[i] = 0;
-    gates_N = 0;
+    float cell_l = view_l / float(grid_dim);
+
 
     int last_x, last_y;
     double angle = msg->angle_max + M_PI*3/2;
@@ -245,11 +88,11 @@ void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
         //coordinates of the corrispondent cell
         int grid_x = x / cell_l;
         int grid_y = y / cell_l;
-        setgrid(grid, grid_x, grid_y, 1);
-        inflate(grid, grid_x, grid_y, 2, inflation);
+        grid.set(grid_x, grid_y, 1);
+        grid.inflate(grid_x, grid_y, 2, inflation);
 
         if(i>0 && (last_x != grid_x || last_y != grid_y)) {
-            grid_line(grid, grid_x, grid_y, last_x, last_y);
+            grid.line(grid_x, grid_y, last_x, last_y);
         }
         last_x = grid_x;
         last_y = grid_y;
@@ -258,18 +101,15 @@ void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
         angle -= msg->angle_increment;
     }
 
-    //path grid
-    int path[GRID_MAX_DIM*GRID_MAX_DIM];
-
     int car_length = (view_l/100)*4 / cell_l;
     int xp = grid_dim/2, yp = grid_dim - car_length;
-    inflate(grid, xp, yp, 0, 3);
+    grid.inflate(xp, yp, 0, 3);
     int to_x = -1, to_y = -1;
-    choosegate(xp, yp, to_x, to_y);
+    grid.choosegate(xp, yp, to_x, to_y);
     
     point_t calc_path[MAX_ITER];
-    int path_idx = pathfinding(path, grid, xp, yp, to_x, to_y, calc_path);
-    grid[to_y*grid_dim + to_x] = 100;
+    int path_idx = pathfinding(grid, xp, yp, to_x, to_y, calc_path);
+    //grid[to_y*grid_dim + to_x] = 100;
 
     //get x and y for start and goal from cells position
     float x_part = view_x + xp*cell_l + cell_l/2,   y_part = view_y + yp*cell_l + cell_l/2;
@@ -284,7 +124,7 @@ void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
     point_t ahead_p = calc_path[ah_idx];
     x_goal = view_x + ahead_p.x*cell_l + cell_l/2;
     y_goal = view_y + ahead_p.y*cell_l + cell_l/2;    
-    grid[ahead_p.y*grid_dim + ahead_p.x] = 101;
+    //grid[ahead_p.y*grid_dim + ahead_p.x] = 101;
     float ang2 = points_angle(x_part, y_part, x_goal, y_goal);
 
     if(enable) {
@@ -308,10 +148,10 @@ void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
 
     //print_map(grid, grid_dim);
     nav_msgs::OccupancyGrid grid_p;
-    grid_p.info.resolution = 0.1;      // float32
-    grid_p.info.width      = grid_dim; // uint32
-    grid_p.info.height     = grid_dim; // uint32
-    std::vector<signed char> vgrd(grid, grid+(grid_dim*grid_dim));
+    grid_p.info.resolution = 0.1;           // float32
+    grid_p.info.width      = grid.grid_dim; // uint32
+    grid_p.info.height     = grid.grid_dim; // uint32
+    std::vector<signed char> vgrd(grid.getGrid(), grid.getGrid()+(grid.grid_dim*grid.grid_dim));
     grid_p.data = vgrd;
     map_pub.publish(grid_p);
 
