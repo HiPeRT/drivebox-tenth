@@ -22,7 +22,7 @@ catkin_package(
 
 include_directories(include ${catkin_INCLUDE_DIRS})
 
-add_executable(dinonav src/dinonav.cpp src/pathfind.cpp src/common.cpp)
+add_executable(dinonav src/main.cpp src/dinonav.cpp src/pathfind.cpp src/common.cpp src/grid.cpp)
 target_link_libraries(dinonav  ${catkin_LIBRARIES})
 # make sure configure headers are built before any node using them
 add_dependencies(dinonav ${PROJECT_NAME}_gencfg)

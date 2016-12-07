@@ -5,15 +5,10 @@
 #include <math.h>
 #include <stdio.h>
 
-#include "ros/ros.h"
-#include "dinonav.h"
 #include "pathfind.h"
 
-extern int stop_cost;
-extern int grid_dim;
 
-static void eject(nodo * &testa, nodo* &coda, int &x, int &y)
-{
+static void eject(nodo * &testa, nodo* &coda, int &x, int &y) {
     x = testa->x;
     y = testa->y;
 
@@ -25,8 +20,7 @@ static void eject(nodo * &testa, nodo* &coda, int &x, int &y)
         testa = tmp;
 }
 
-static void inject(nodo * &testa, nodo* &coda, int x, int y)
-{
+static void inject(nodo * &testa, nodo* &coda, int x, int y) {
     nodo *n = new nodo;
 
     n->x = x;
@@ -42,11 +36,9 @@ static void inject(nodo * &testa, nodo* &coda, int x, int y)
         n->succ = NULL;
     }
 
-
-
 }
 
-int gridval(int path[], int x, int y) {
+int gridval(grid_t &path, int x, int y) {
     int val = getgrid(path, x, y);
     if(val <= 0)
         return 999999; //as infinite
@@ -56,15 +48,15 @@ int gridval(int path[], int x, int y) {
 
 int bigger_x, bigger_y, bigger_value;
 
-bool gridcheck(int path[], int grid[], int ox, int oy, int x, int y) {
+bool gridcheck(grid_t &path, grid_t &grid, int ox, int oy, int x, int y) {
 
-    int pos = y*grid_dim + x;
-    if(x<0 || x >= grid_dim || y<0 || y >= grid_dim)
+    int pos = y*grid.size + x;
+    if(x<0 || x >= grid.size || y<0 || y >= grid.size)
         return false;
 
-    if (grid[pos] == 0 && path[pos] == 0) {
-        int val = path[oy*grid_dim + ox] +1;
-        path[y*grid_dim + x] = val;
+    if (grid.data[pos] == 0 && path.data[pos] == 0) {
+        int val = path.data[oy*grid.size + ox] +1;
+        path.data[y*grid.size + x] = val;
 
         if(val > bigger_value) {
             bigger_value = val;
@@ -78,11 +70,8 @@ bool gridcheck(int path[], int grid[], int ox, int oy, int x, int y) {
 
 
 
-int pathfinding(int path[], int grid[], int xp, int yp, int &xa, int &ya, point_t calc_path[])
+int pathfinding(grid_t &path, grid_t &grid, int xp, int yp, int &xa, int &ya, point_t calc_path[], int stop_cost)
 {
-    for(int i=0; i<grid_dim*grid_dim; i++)
-        path[i] = 0;
-
     //Algoritmo BFS:
     nodo *testa = NULL;
     nodo *coda = NULL;
@@ -170,7 +159,7 @@ int pathfinding(int path[], int grid[], int xp, int yp, int &xa, int &ya, point_
         //recalc
         xa = -1;
         ya = -1;
-        return pathfinding(path, grid, xp, yp, xa, ya, calc_path);
+        return pathfinding(path, grid, xp, yp, xa, ya, calc_path, stop_cost);
     }
     
 
