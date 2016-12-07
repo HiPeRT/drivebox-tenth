@@ -3,13 +3,17 @@
 Grid::Grid() {
 
     grid_dim = 100;
+}
 
+
+void Grid::init() {
+    
     //init grid
     for(int i=0; i<grid_dim*grid_dim; i++)
         grid[i] = 0;
+    
     gates_N = 0;
 }
-
 
 bool Grid::set(int x, int y, int value) {
     int pos = y*grid_dim + x;

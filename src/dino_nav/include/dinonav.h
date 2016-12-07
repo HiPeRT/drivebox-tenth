@@ -1,1 +1,0 @@
-#define GRID_MAX_DIM 1000

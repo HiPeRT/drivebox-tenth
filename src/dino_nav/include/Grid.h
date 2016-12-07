@@ -16,6 +16,7 @@ class Grid {
 public:
     Grid();
     //virtual ~Grid();
+    void init();
 
     int grid_dim;
 

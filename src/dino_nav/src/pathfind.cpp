@@ -6,7 +6,6 @@
 #include <stdio.h>
 
 #include "ros/ros.h"
-#include "dinonav.h"
 #include "pathfind.h"
 
 extern int stop_cost;
@@ -45,7 +44,7 @@ static void inject(nodo * &testa, nodo* &coda, int x, int y)
 
 }
 
-int gridval(Grid path, int x, int y) {
+int gridval(Grid &path, int x, int y) {
     
     int val = path.get(x, y);
 
@@ -79,7 +78,7 @@ bool gridcheck(int path[], int grid[], int ox, int oy, int x, int y, int grid_di
 
 
 
-int pathfinding(Grid grid_, int xp, int yp, int &xa, int &ya, point_t calc_path[])
+int pathfinding(Grid &grid_, int xp, int yp, int &xa, int &ya, point_t calc_path[])
 {
     Grid path_;
 
@@ -168,14 +167,14 @@ int pathfinding(Grid grid_, int xp, int yp, int &xa, int &ya, point_t calc_path[
         calc_path[path_l].y = y;
         path_l++;
     }
-    
+
     if(iter >= MAX_ITER && xa != -1 && ya != -1) {
         //recalc
         xa = -1;
         ya = -1;
         return pathfinding(grid_, xp, yp, xa, ya, calc_path);
     }
-    
+
 
     //expand path
     for(int i=0; i<path_l; i++) {

@@ -1,57 +1,24 @@
-#include <iostream>
-#include <math.h>
+#include "Dinonav.h"
 
-#include "ros/ros.h"
-#include "race/drive_param.h"
-#include "sensor_msgs/LaserScan.h"
-#include "geometry_msgs/PoseStamped.h"
-#include "nav_msgs/OccupancyGrid.h"
-#include "std_msgs/Float32.h"
+ros::Publisher drive_pub, map_pub, speed_pub; 
 
-#include <dynamic_reconfigure/server.h>
-#include <dino_nav/DinonavConfig.h>
-
-#include "dinonav.h"
-#include "pathfind.h"
-#include "common.h"
-#include "Grid.h"
-
-ros::Publisher drive_pub, map_pub, speed_pub; //path_pub;
-
-float speed = 0;
-int inflation = 0;
-int stop_cost = 15;
-float zoom = 3;
-bool enable = true;
-
+float speed;
+int   inflation;
+int   stop_cost;
+float zoom;
+bool  enable;
 float estimated_speed;
 
-
-/*
-void print_map(int grid[], int size) {
-
-    for(int i=0; i<size; i++) {
-        printf(" ");
-        for(int j=0; j<size; j++) {
-            int val = grid[i*size +j];
-            if(val == 1) printf("X ");
-            else if(val == 10) printf("* ");
-            else printf("  ");
-        }
-        printf("\n");
-    }
-    printf("\n");
-}
-*/
+Grid grid;
 
 void reconf(dino_nav::DinonavConfig &config, uint32_t level) {
-  ROS_INFO("Reconfigure Request");
-  speed = config.speed;
-  inflation = config.inflation;
-  stop_cost = config.stop_cost;
-  //grid_dim = config.grid_dim;
-  zoom = config.zoom;
-  enable = config.enable;
+    ROS_INFO("Reconfigure Request");
+    speed = config.speed;
+    inflation = config.inflation;
+    stop_cost = config.stop_cost;
+    grid.grid_dim = config.grid_dim;
+    zoom = config.zoom;
+    enable = config.enable;
 }
 
 
@@ -59,7 +26,9 @@ void reconf(dino_nav::DinonavConfig &config, uint32_t level) {
     laserscan callback
 */
 void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
-    //ROS_INFO("Scan recived: [%f]", msg->scan_time);
+    ROS_INFO("Scan recived: [%f]", msg->scan_time);
+
+    grid.init();
 
     int size = msg->ranges.size();
     float maxd = zoom;
@@ -68,7 +37,6 @@ void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
     float view_l = 512;
     float view_x = 10, view_y = 10;
 
-    Grid grid;
     int grid_dim = grid.grid_dim;
 
     float cell_l = view_l / float(grid_dim);
@@ -106,7 +74,7 @@ void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
     grid.inflate(xp, yp, 0, 3);
     int to_x = -1, to_y = -1;
     grid.choosegate(xp, yp, to_x, to_y);
-    
+
     point_t calc_path[MAX_ITER];
     int path_idx = pathfinding(grid, xp, yp, to_x, to_y, calc_path);
     //grid[to_y*grid_dim + to_x] = 100;
@@ -202,63 +170,3 @@ void pose_recv(const geometry_msgs::PoseStamped::ConstPtr& msg) {
     speed_pub.publish(m);
 }
 
-
-int main(int argc, char **argv) {
-    /**
-    * The ros::init() function needs to see argc and argv so that it can perform
-    * any ROS arguments and name remapping that were provided at the command line.
-    * For programmatic remappings you can use a different version of init() which takes
-    * remappings directly, but for most command-line programs, passing argc and argv is
-    * the easiest way to do it.  The third argument to init() is the name of the node.
-    *
-    * You must call one of the versions of ros::init() before using any other
-    * part of the ROS system.
-    */
-    ros::init(argc, argv, "listener");
-
-    /**
-    * NodeHandle is the main access point to communications with the ROS system.
-    * The first NodeHandle constructed will fully initialize this node, and the last
-    * NodeHandle destructed will close down the node.
-    */
-    ros::NodeHandle n;
-
-    /**
-    * The subscribe() call is how you tell ROS that you want to receive messages
-    * on a given topic.  This invokes a call to the ROS
-    * master node, which keeps a registry of who is publishing and who
-    * is subscribing.  Messages are passed to a callback function, here
-    * called chatterCallback.  subscribe() returns a Subscriber object that you
-    * must hold on to until you want to unsubscribe.  When all copies of the Subscriber
-    * object go out of scope, this callback will automatically be unsubscribed from
-    * this topic.
-    *
-    * The second parameter to the subscribe() function is the size of the message
-    * queue.  If messages are arriving faster than they are being processed, this
-    * is the number of messages that will be buffered up before beginning to throw
-    * away the oldest ones.
-    */
-    ros::Subscriber ssub = n.subscribe("scan", 1, laser_recv);
-    ros::Subscriber psub = n.subscribe("pose_stamped", 1, pose_recv);
-
-    drive_pub = n.advertise<race::drive_param>("drive_parameters", 1);
-    map_pub = n.advertise<nav_msgs::OccupancyGrid>("dinonav/map", 1);
-    speed_pub = n.advertise<std_msgs::Float32>("dinonav/speed", 1);
-
-    //path_pub = n.advertise<nav_msgs::OccupancyGrid>("dinonav/path", 1);
-    /**
-    * ros::spin() will enter a loop, pumping callbacks.  With this version, all
-    * callbacks will be called from within this thread (the main one).  ros::spin()
-    * will exit when Ctrl-C is pressed, or the node is shutdown by the master.
-    */
-
-    dynamic_reconfigure::Server<dino_nav::DinonavConfig> server;
-    dynamic_reconfigure::Server<dino_nav::DinonavConfig>::CallbackType f;
-
-    f = boost::bind(&reconf, _1, _2);
-    server.setCallback(f);
-
-    ros::spin();
-
-    return 0;
-}
