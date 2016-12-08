@@ -20,6 +20,18 @@ struct dinonav_t {
     bool    enable;
 };
 
+struct view_t {
+
+    float x,y;
+    float l;
+    float cell_l;
+};
+
+struct car_t {
+
+    float length;
+    float width;
+};
 
 void reconf(dino_nav::DinonavConfig &config, uint32_t level);
 void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg);

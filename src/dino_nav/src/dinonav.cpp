@@ -25,37 +25,27 @@ void reconf(dino_nav::DinonavConfig &config, uint32_t level) {
 }
 
 
-/**
-    laserscan callback
-*/
-void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
-    //ROS_INFO("Scan recived: [%f]", msg->scan_time);
-
-    int size = msg->ranges.size();
-    float maxd = nav.zoom;
-    int quad_l = maxd*2;
-
-    float view_l = 512;
-    float view_x = 10, view_y = 10;
-
-    float cell_l = view_l / float(nav.grid_dim);
-    grid_t grid;
-    init_grid(grid, nav.grid_dim);
+void discretize_laserscan(grid_t &grid, view_t &view, const sensor_msgs::LaserScan::ConstPtr& msg) {
 
     int last_x, last_y;
+
+    float maxd = nav.zoom;
+    int quad_l = maxd*2;
+    int size = msg->ranges.size();
     double angle = msg->angle_max + M_PI*3/2;
+
     for(int i=0; i<size; i++) {
         float r = msg->ranges[i];
 
         //quad_l : view_l = r : view_r
         //coodianates of the sigle ray
-        float view_r = r*view_l/quad_l;
-        float x = view_l/2 + cos(angle) * view_r;
-        float y = view_l + sin(angle) * view_r;
+        float view_r = r*view.l/quad_l;
+        float x = view.l/2 + cos(angle) * view_r;
+        float y = view.l + sin(angle) * view_r;
 
         //coordinates of the corrispondent cell
-        int grid_x = x / cell_l;
-        int grid_y = y / cell_l;
+        int grid_x = x / view.cell_l;
+        int grid_y = y / view.cell_l;
         setgrid(grid, grid_x, grid_y, 1);
         inflate(grid, grid_x, grid_y, 2, nav.inflation);
 
@@ -64,38 +54,59 @@ void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
         }
         last_x = grid_x;
         last_y = grid_y;
-        
+
 
         angle -= msg->angle_increment;
     }
+}
 
-    //path grid
-    grid_t path;
-    init_grid(path, nav.grid_dim);
+void init_view(view_t &view, int size) {
+    view.x = 10; view.y = 10;
+    view.l = 512;
+    view.cell_l = view.l / float(size);
+}
 
-    int car_length = (view_l/100)*4 / cell_l;
-    int xp = grid.size/2, yp = grid.size - car_length;
+void init_car(car_t &car, view_t &view) {
+    car.length = (view.l/100)*4 / view.cell_l;
+}
+
+/**
+    laserscan callback
+*/
+void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
+    //ROS_INFO("Scan recived: [%f]", msg->scan_time);
+    view_t view;
+    init_view(view, nav.grid_dim);
+
+    grid_t grid;
+    init_grid(grid, nav.grid_dim);
+
+    discretize_laserscan(grid, view, msg);
+
+    car_t car;
+    init_car(car, view);
+
+    int xp = grid.size/2, yp = grid.size - car.length;
     inflate(grid, xp, yp, 0, 3);
     int to_x = -1, to_y = -1;
     choosegate(grid, xp, yp, to_x, to_y);
     
-    point_t calc_path[MAX_ITER];
-    int path_idx = pathfinding(path, grid, xp, yp, to_x, to_y, calc_path, nav.stop_cost);
+    path_t path = pathfinding(grid, xp, yp, to_x, to_y, nav.stop_cost);
     grid.data[to_y*grid.size + to_x] = 100;
 
     //get x and y for start and goal from cells position
-    float x_part = view_x + xp*cell_l + cell_l/2,   y_part = view_y + yp*cell_l + cell_l/2;
-    float x_goal = view_x + to_x*cell_l + cell_l/2, y_goal = view_y + to_y*cell_l + cell_l/2;    
+    float x_part = view.x + xp*view.cell_l + view.cell_l/2,   y_part = view.y + yp*view.cell_l + view.cell_l/2;
+    float x_goal = view.x + to_x*view.cell_l + view.cell_l/2, y_goal = view.y + to_y*view.cell_l + view.cell_l/2;
 
     //compute angle for the steer
     float ang  = points_angle(x_part, y_part, x_goal, y_goal);
     
     //compute angle ahead for the speed modulation
-    int ah_idx = path_idx -4;
+    int ah_idx = path.start -4;
     if(ah_idx < 0) ah_idx = 0;
-    point_t ahead_p = calc_path[ah_idx];
-    x_goal = view_x + ahead_p.x*cell_l + cell_l/2;
-    y_goal = view_y + ahead_p.y*cell_l + cell_l/2;    
+    point_t ahead_p = path.data[ah_idx];
+    x_goal = view.x + ahead_p.x*view.cell_l + view.cell_l/2;
+    y_goal = view.y + ahead_p.y*view.cell_l + view.cell_l/2;
     grid.data[ahead_p.y*grid.size + ahead_p.x] = 101;
     float ang2 = points_angle(x_part, y_part, x_goal, y_goal);
 

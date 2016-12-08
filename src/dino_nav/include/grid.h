@@ -2,7 +2,7 @@
 #define GRID_H
 
 #define GRID_MAX_DIM 1000
-#define GRID_MAX_GATES 256
+#define GRID_MAX_GATES 64
 
 struct point_t {
     int x, y;

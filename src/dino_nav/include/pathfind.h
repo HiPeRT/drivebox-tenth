@@ -13,6 +13,14 @@ struct nodo {
 
 const int MAX_ITER = 500;
 
-int pathfinding(grid_t &path, grid_t &grid, int xp, int yp, int &xa, int &ya, point_t calc_path[], int stop_cost);
+struct path_t {
+
+    point_t data[MAX_ITER];
+    int size;
+
+    int start;
+};
+
+path_t pathfinding(grid_t &grid, int xp, int yp, int &xa, int &ya, int stop_cost);
 
 #endif //PATHFIND_H
