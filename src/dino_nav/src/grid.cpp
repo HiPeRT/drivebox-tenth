@@ -190,7 +190,10 @@ float_point_t grid2view(int x, int y, view_t &view) {
 }
 
 
-point_t view2grid(float x, float y, view_t &view, grid_t &grid) {
+point_t view2grid(float x, float y, view_t &view) {
+    point_t p;
+    p.x = (x - view.x)/view.cell_l;
+    p.y = (y - view.y)/view.cell_l;
 
-
+    return p;
 }

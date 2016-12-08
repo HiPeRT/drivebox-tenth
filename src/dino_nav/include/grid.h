@@ -30,6 +30,6 @@ void inflate(grid_t &grid, int x, int y, int val, int n);
 void choosegate(grid_t &grid, int px, int py, int &to_x, int &to_y);
 
 float_point_t grid2view(int x, int y, view_t &view);
-point_t view2grid(float x, float y, view_t &view, grid_t &grid);
+point_t view2grid(float x, float y, view_t &view);
 
 #endif //GRID_H
