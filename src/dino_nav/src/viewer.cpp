@@ -62,6 +62,7 @@ void draw_drive_params(view_t &view, float throttle, float steer, float speed) {
     al_draw_filled_rectangle(origin.x, origin.y + t_height/2, origin.x + t_width, origin.y + t_height/2 - t_value, t_col);
     al_draw_rectangle(origin.x, origin.y, origin.x + t_width, origin.y + t_height, VIEW_COLOR, 1);
 
+
     //steer
     origin.x += t_width + 10;
     float w_height = t_height/2;
@@ -81,6 +82,30 @@ void draw_drive_params(view_t &view, float throttle, float steer, float speed) {
     al_draw_textf(font, VIEW_COLOR, origin.x, origin.y + w_height +5, 0,  "throttle: %4.0f", throttle);
     al_draw_textf(font, VIEW_COLOR, origin.x, origin.y + w_height +25, 0, "steer:    %4.0f", steer);
 
+
+    //speed
+    static float smooth_speed =0;
+    float lerp = 0.02;
+    if(fabs(smooth_speed - speed) > lerp)
+        smooth_speed < speed ? smooth_speed += lerp : smooth_speed -= lerp;
+
+    origin.x = weel2o.x + w_height;
+    float_point_t tacho, tach;
+    tacho.x = origin.x + t_height/2;
+    tacho.y = origin.y + t_height/2;
+    tach.x = origin.x + t_height -5;
+    tach.y = origin.y + t_height/2;
+
+    float tach_start = M_PI/2 + M_PI/4, tach_ang = M_PI + M_PI/4;
+    
+    float v_value = tach_start + (smooth_speed/5 * tach_ang);
+    rotate_point(tach, tacho, v_value);
+
+    al_draw_line(tacho.x, tacho.y, tach.x, tach.y, VIEW_COLOR, 1);
+    al_draw_circle(tacho.x, tacho.y, 2, VIEW_COLOR, 1);
+    al_draw_arc(tacho.x, tacho.y, t_height/2, tach_start, tach_ang, VIEW_COLOR, 1);
+
+    al_draw_textf(font, VIEW_COLOR, origin.x + t_height/2, origin.y + w_height +25, 0, "%2.1f m/s", speed);
 }
 
 
