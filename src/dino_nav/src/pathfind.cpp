@@ -165,14 +165,14 @@ path_t pathfinding(grid_t &grid, int xp, int yp, int &xa, int &ya, int stop_cost
         path.size++;
     }
 
-    /*
     if(iter >= MAX_ITER && xa != -1 && ya != -1) {
         //recalc
         xa = -1;
         ya = -1;
+        ROS_WARN("GATE PATH INVALID, recalc with standard method");
+        //TODO: deal with stack overflow!!
         return pathfinding(grid, xp, yp, xa, ya, stop_cost);
     }
-    */
 
     //expand path
     for(int i=0; i<path.size; i++) {
