@@ -1,11 +1,8 @@
 #ifndef DINONAV_H
 #define DINONAV_H
 
-#include "race/drive_param.h"
 #include "sensor_msgs/LaserScan.h"
 #include "geometry_msgs/PoseStamped.h"
-#include "nav_msgs/OccupancyGrid.h"
-#include "std_msgs/Float32.h"
 
 #include <dynamic_reconfigure/server.h>
 #include <dino_nav/DinonavConfig.h>
@@ -19,6 +16,8 @@ struct dinonav_t {
     float   zoom;
     bool    enable;
 };
+
+enum grid_vals { EMPTY, WALL, INFLATED, GATE };
 
 struct view_t {
 

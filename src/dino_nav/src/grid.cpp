@@ -6,6 +6,7 @@
 
 #include "ros/ros.h"
 #include "grid.h"
+#include "dinonav.h"
 
 
 void init_grid(grid_t &grid, int size) {
@@ -14,7 +15,7 @@ void init_grid(grid_t &grid, int size) {
 
     //init grid
     for(int i=0; i<size*size; i++)
-        grid.data[i] = 0;
+        grid.data[i] = EMPTY;
     grid.gates_n = 0;
 }
 
@@ -22,7 +23,7 @@ void init_grid(grid_t &grid, int size) {
 /**
     geterate a line in a matrix from point 1 to 2
 */
-void grid_line(grid_t &grid, int x1, int y1, int x2, int y2) {
+void grid_line(grid_t &grid, int x1, int y1, int x2, int y2, int value) {
     //gate search
     int startGx = -1, startGy = -1;
     int endGx = -1,   endGy = -1;
@@ -49,7 +50,7 @@ void grid_line(grid_t &grid, int x1, int y1, int x2, int y2) {
         y = y + y_inc;
         int xx = x, yy = y;
         if(getgrid(grid, xx, yy) == 0) {
-            setgrid(grid, xx, yy, 3);
+            setgrid(grid, xx, yy, value);
             if(startGx == -1) {
                 startGx = xx; startGy = yy;
             } else {
@@ -100,7 +101,7 @@ bool grid_line_control(grid_t &grid, int x1, int y1, int x2, int y2) {
         int val = getgrid(grid, xx, yy);
         int val1 = getgrid(grid, xx + 1, yy);
         int val2 = getgrid(grid, xx - 1, yy);
-        if(val == 1 || val == 2 || val1 == 1 || val1 == 2 || val2 == 1 || val2 == 2)
+        if(val != EMPTY || val1 != EMPTY || val2 != EMPTY)
             return false;
 
         //setgrid(grid, xx +1, yy, 10);
@@ -141,7 +142,7 @@ void inflate(grid_t &grid, int x, int y, int val, int n) {
     if(n == 0)
         return;
 
-    if(getgrid(grid, x, y) != 1)
+    if(getgrid(grid, x, y) != WALL)
         setgrid(grid, x, y, val);
 
     inflate(grid, x-1, y-1, val, n -1);

@@ -1,14 +1,24 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(dino_nav)
 
-find_package(catkin REQUIRED COMPONENTS roscpp rospy std_msgs nav_msgs geometry_msgs genmsg race dynamic_reconfigure)
-
-find_package(message_generation)
+find_package(catkin REQUIRED COMPONENTS roscpp rospy std_msgs nav_msgs geometry_msgs genmsg race dynamic_reconfigure message_generation)
 
 find_package(PkgConfig)
 pkg_search_module(ALLEGRO5 allegro-5.0)
 pkg_search_module(ALLEGRO_PRIMITIVES allegro_primitives-5.0)
 pkg_search_module(ALLEGRO_TTF allegro_ttf-5.0)
+
+add_message_files(
+   FILES
+   Point.msg
+   Stat.msg
+)
+
+generate_messages(
+  DEPENDENCIES
+  std_msgs
+)
+
 
 generate_dynamic_reconfigure_options(
   cfg/Dinonav.cfg

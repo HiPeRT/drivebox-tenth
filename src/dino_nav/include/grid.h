@@ -20,7 +20,7 @@ struct grid_t {
 
 void init_grid(grid_t &grid, int size);
 
-void grid_line(grid_t &grid, int x1, int y1, int x2, int y2);
+void grid_line(grid_t &grid, int x1, int y1, int x2, int y2, int value);
 bool grid_line_control(grid_t &grid, int x1, int y1, int x2, int y2);
 
 bool setgrid(grid_t &grid, int x, int y, int value);

@@ -8,6 +8,9 @@
 
 #include "dinonav.h"
 
+#include "dino_nav/Stat.h"
+#include "race/drive_param.h"
+#include "std_msgs/Float32.h"
 
 extern ros::Publisher drive_pub, map_pub, speed_pub;
 
@@ -47,11 +50,11 @@ void discretize_laserscan(grid_t &grid, view_t &view, const sensor_msgs::LaserSc
         //coordinates of the corrispondent cell
         int grid_x = x / view.cell_l;
         int grid_y = y / view.cell_l;
-        setgrid(grid, grid_x, grid_y, 1);
-        inflate(grid, grid_x, grid_y, 2, nav.inflation);
+        setgrid(grid, grid_x, grid_y, WALL);
+        inflate(grid, grid_x, grid_y, INFLATED, nav.inflation);
 
         if(i>0 && (last_x != grid_x || last_y != grid_y)) {
-            grid_line(grid, grid_x, grid_y, last_x, last_y);
+            grid_line(grid, grid_x, grid_y, last_x, last_y, GATE);
         }
         last_x = grid_x;
         last_y = grid_y;
@@ -96,7 +99,6 @@ void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
     choosegate(grid, xp, yp, to_x, to_y);
     
     path_t path = pathfinding(grid, xp, yp, to_x, to_y, nav.stop_cost);
-    grid.data[to_y*grid.size + to_x] = 100;
 
     //get x and y for start and goal from cells position
     float x_part = view.x + xp*view.cell_l + view.cell_l/2,   y_part = view.y + yp*view.cell_l + view.cell_l/2;
@@ -111,7 +113,6 @@ void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
     point_t ahead_p = path.data[ah_idx];
     x_goal = view.x + ahead_p.x*view.cell_l + view.cell_l/2;
     y_goal = view.y + ahead_p.y*view.cell_l + view.cell_l/2;
-    grid.data[ahead_p.y*grid.size + ahead_p.x] = 101;
     float ang2 = points_angle(x_part, y_part, x_goal, y_goal);
 
     if(nav.enable) {
@@ -136,24 +137,23 @@ void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
         drive_pub.publish(m);
     }
 
-    //print_map(grid, grid_dim);
-    nav_msgs::OccupancyGrid grid_p;
-    grid_p.info.resolution = 0.1;      // float32
-    grid_p.info.width      = grid.size; // uint32
-    grid_p.info.height     = grid.size; // uint32
+    //PUB stats for viewer
+    dino_nav::Stat stat;
+    stat.grid_size = grid.size;
     std::vector<signed char> vgrd(grid.data, grid.data+(grid.size*grid.size));
-    grid_p.data = vgrd;
-    map_pub.publish(grid_p);
+    stat.grid = vgrd;
 
-    /*
-    nav_msgs::OccupancyGrid path_p;
-    path_p.info.resolution = 0.1;      // float32
-    path_p.info.width      = grid_dim; // uint32
-    path_p.info.height     = grid_dim; // uint32
-    std::vector<signed char> vpth(path, path+(grid_dim*grid_dim));
-    path_p.data = vpth;
-    path_pub.publish(path_p);
-    */
+    stat.path_size = path.size;
+    stat.path_start = path.start;
+    for(int i=0; i<path.size; i++) {     
+        dino_nav::Point point;
+        point.x = path.data[i].x;
+        point.y = path.data[i].y;
+
+        stat.path.push_back(point);
+    }
+    map_pub.publish(stat);
+
     PTIME_END()
     PTIME_STAMP(,DINONAV)
 }

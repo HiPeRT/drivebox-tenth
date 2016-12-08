@@ -6,7 +6,7 @@
 #include <stdio.h>
 
 #include "pathfind.h"
-
+#include "dinonav.h"
 
 static void eject(nodo * &testa, nodo* &coda, int &x, int &y) {
     x = testa->x;
@@ -178,23 +178,15 @@ path_t pathfinding(grid_t &grid, int xp, int yp, int &xa, int &ya, int stop_cost
     for(int i=0; i<path.size; i++) {
         int x = path.data[i].x;
         int y = path.data[i].y;
-        setgrid(grid, x, y, 10);
+        //setgrid(grid, x, y, 10);
 
-        if(getgrid(grid, x+1, y) == 0)
-            setgrid(grid, x+1, y, 10);
-        else
-            if(getgrid(grid, x-2, y) == 0) {
-                setgrid(grid, x-2, y, 10);
+        if(!getgrid(grid, x+1, y) == EMPTY)
+            if(getgrid(grid, x-2, y) == EMPTY) 
                 path.data[i].x = x-1;
-            }
     
-        if(getgrid(grid, x-1, y) == 0)
-            setgrid(grid, x-1, y, 10);        
-        else
-            if(getgrid(grid, x+2, y) == 0) {
-                setgrid(grid, x+2, y, 10);
+        if(!getgrid(grid, x-1, y) == EMPTY)
+            if(getgrid(grid, x+2, y) == EMPTY) 
                 path.data[i].x = x+1;
-            }
     }
 
     //shortcuts path

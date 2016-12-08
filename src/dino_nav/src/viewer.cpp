@@ -6,11 +6,13 @@
 #include <allegro5/allegro_ttf.h>
 
 #include "ros/ros.h"
-#include "nav_msgs/OccupancyGrid.h"
 #include "std_msgs/Float32.h"
+#include "dino_nav/Stat.h"
+
+#include "grid.h"
+#include "pathfind.h"
 
 ALLEGRO_FONT *font;
-#define GRID_MAX_DIM 1000
 
 float estimated_speed = 0;
 
@@ -20,11 +22,11 @@ void speed_recv(const std_msgs::Float32::ConstPtr& msg) {
 }
 
 
-void map_recv(const nav_msgs::OccupancyGrid::ConstPtr& msg) {
-    ROS_INFO("map recived");
+void map_recv(const dino_nav::Stat::ConstPtr& msg) {
+    ROS_INFO("stat recived");
     al_clear_to_color(al_map_rgb(0,0,0));
 
-    int grid_dim = msg->info.width;
+    int grid_dim = msg->grid_size;
     int grid[GRID_MAX_DIM*GRID_MAX_DIM];
     
     float alpha = 0.3f;
@@ -47,7 +49,7 @@ void map_recv(const nav_msgs::OccupancyGrid::ConstPtr& msg) {
         al_draw_line(view_x, view_y + i * cell_l, view_x + view_l, view_y + i * cell_l, quad_grid, 1);
 
         for (int j = 0; j < grid_dim; j++)
-            grid[i*grid_dim +j] = msg->data[i*grid_dim + j];
+            grid[i*grid_dim +j] = msg->grid[i*grid_dim + j];
     }
 
     al_draw_rectangle(view_x, view_y, view_x + view_l, view_y + view_l, quad_col, 1);
@@ -106,48 +108,14 @@ void map_recv(const nav_msgs::OccupancyGrid::ConstPtr& msg) {
 
 
 int main(int argc, char **argv) {
-    /**
-    * The ros::init() function needs to see argc and argv so that it can perform
-    * any ROS arguments and name remapping that were provided at the command line.
-    * For programmatic remappings you can use a different version of init() which takes
-    * remappings directly, but for most command-line programs, passing argc and argv is
-    * the easiest way to do it.  The third argument to init() is the name of the node.
-    *
-    * You must call one of the versions of ros::init() before using any other
-    * part of the ROS system.
-    */
+
+
     ros::init(argc, argv, "dinonav_viewer");
 
-    /**
-    * NodeHandle is the main access point to communications with the ROS system.
-    * The first NodeHandle constructed will fully initialize this node, and the last
-    * NodeHandle destructed will close down the node.
-    */
     ros::NodeHandle n;
 
-    /**
-    * The subscribe() call is how you tell ROS that you want to receive messages
-    * on a given topic.  This invokes a call to the ROS
-    * master node, which keeps a registry of who is publishing and who
-    * is subscribing.  Messages are passed to a callback function, here
-    * called chatterCallback.  subscribe() returns a Subscriber object that you
-    * must hold on to until you want to unsubscribe.  When all copies of the Subscriber
-    * object go out of scope, this callback will automatically be unsubscribed from
-    * this topic.
-    *
-    * The second parameter to the subscribe() function is the size of the message
-    * queue.  If messages are arriving faster than they are being processed, this
-    * is the number of messages that will be buffered up before beginning to throw
-    * away the oldest ones.
-    */
-    ros::Subscriber m_sub = n.subscribe("dinonav/map", 1,   map_recv);
+    ros::Subscriber m_sub = n.subscribe("dinonav/stat", 1,   map_recv);
     ros::Subscriber s_sub = n.subscribe("dinonav/speed", 1, speed_recv);
-
-    /**
-    * ros::spin() will enter a loop, pumping callbacks.  With this version, all
-    * callbacks will be called from within this thread (the main one).  ros::spin()
-    * will exit when Ctrl-C is pressed, or the node is shutdown by the master.
-    */
 
     ALLEGRO_DISPLAY *display = NULL;
 
