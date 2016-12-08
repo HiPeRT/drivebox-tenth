@@ -178,8 +178,7 @@ path_t pathfinding(grid_t &grid, int xp, int yp, int &xa, int &ya, int stop_cost
     for(int i=0; i<path.size; i++) {
         int x = path.data[i].x;
         int y = path.data[i].y;
-        //setgrid(grid, x, y, 10);
-
+        
         if(!getgrid(grid, x+1, y) == EMPTY)
             if(getgrid(grid, x-2, y) == EMPTY) 
                 path.data[i].x = x-1;
@@ -187,6 +186,7 @@ path_t pathfinding(grid_t &grid, int xp, int yp, int &xa, int &ya, int stop_cost
         if(!getgrid(grid, x-1, y) == EMPTY)
             if(getgrid(grid, x+2, y) == EMPTY) 
                 path.data[i].x = x+1;
+        
     }
 
     //shortcuts path

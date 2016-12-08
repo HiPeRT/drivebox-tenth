@@ -181,3 +181,16 @@ void choosegate(grid_t &grid, int px, int py, int &to_x, int &to_y) {
         to_y = (s.y + e.y)/2;
     }
 }
+
+float_point_t grid2view(int x, int y, view_t &view) {
+    float_point_t p;
+    p.x = view.x + x*view.cell_l + view.cell_l/2;
+    p.y = view.y + y*view.cell_l + view.cell_l/2;
+    return p;
+}
+
+
+point_t view2grid(float x, float y, view_t &view, grid_t &grid) {
+
+
+}

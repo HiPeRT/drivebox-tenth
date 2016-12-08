@@ -11,16 +11,11 @@
 
 #include "grid.h"
 #include "pathfind.h"
+#include "dinonav.h"
+#include "common.h"
+#include "viewer.h"
 
 ALLEGRO_FONT *font;
-
-float estimated_speed = 0;
-
-void speed_recv(const std_msgs::Float32::ConstPtr& msg) {
-
-    estimated_speed = msg->data;
-}
-
 
 void map_recv(const dino_nav::Stat::ConstPtr& msg) {
     ROS_INFO("stat recived");
@@ -29,80 +24,80 @@ void map_recv(const dino_nav::Stat::ConstPtr& msg) {
     int grid_dim = msg->grid_size;
     int grid[GRID_MAX_DIM*GRID_MAX_DIM];
     
-    float alpha = 0.3f;
-    ALLEGRO_COLOR scan_col = al_map_rgba_f(1.0f, 0, 0, 1.0f);
-    ALLEGRO_COLOR obst_col = al_map_rgba_f(1.0f*alpha,1.0f*alpha, 0, alpha);
-    ALLEGRO_COLOR quad_col = al_map_rgba_f(0,1.0f,0, 1.0f);
-    ALLEGRO_COLOR path_col = al_map_rgba_f(0,1.0f*alpha,1.0f*alpha,alpha);
-    ALLEGRO_COLOR gate_col = al_map_rgba_f(1.0f*alpha,1.0f*alpha,1.0f*alpha,alpha);
-    alpha = 0.1f;
-    ALLEGRO_COLOR infl_col = al_map_rgba_f(1.0f*alpha,1.0f*alpha, 0, alpha);
-    ALLEGRO_COLOR quad_grid = al_map_rgba_f(0,1.0f*alpha,0,alpha);
-
-    float view_l = 512;
-    float view_x = 10, view_y = 10;
-
-    float cell_l = view_l / float(grid_dim);
+    view_t view;
+    view.x = 10; view.y = 10;
+    view.l = 512;
+    view.cell_l = view.l / float(grid_dim);
 
     for(int i=0; i<grid_dim; i++) {
-        al_draw_line(view_x + i * cell_l, view_y, view_x + i * cell_l, view_y + view_l, quad_grid, 1);
-        al_draw_line(view_x, view_y + i * cell_l, view_x + view_l, view_y + i * cell_l, quad_grid, 1);
+        al_draw_line(view.x + i * view.cell_l, view.y, view.x + i * view.cell_l, view.y + view.l, VIEW_GRID_COLOR, 1);
+        al_draw_line(view.x, view.y + i * view.cell_l, view.x + view.l, view.y + i * view.cell_l, VIEW_GRID_COLOR, 1);
 
         for (int j = 0; j < grid_dim; j++)
             grid[i*grid_dim +j] = msg->grid[i*grid_dim + j];
     }
 
-    al_draw_rectangle(view_x, view_y, view_x + view_l, view_y + view_l, quad_col, 1);
-
-    int to_x, to_y, to_x2, to_y2;
+    al_draw_rectangle(view.x, view.y, view.x + view.l, view.y + view.l, VIEW_COLOR, 1);
 
     for(int i=0; i<grid_dim; i++) {
         for (int j = 0; j < grid_dim; j++) {
             int val = grid[i*grid_dim +j];
             ALLEGRO_COLOR col;
 
-            if (val == 1) {
-                col = obst_col;
-            } else if(val == 2) {
-                col = infl_col;  
-            } else if(val == 3) {
-                col = gate_col;  
-            } else if (val == 10) {
-                col = path_col;
-            } else if (val == 100) {
-                col = scan_col;
-                to_x = j;
-                to_y = i;
-            } else if (val == 101) {
-                col = scan_col;
-                to_x2 = j;
-                to_y2 = i;
+            if (val == WALL) {
+                col = WALL_COLOR;
+            } else if(val == INFLATED) {
+                col = INFLATED_COLOR;  
+            } else if(val == GATE) {
+                col = GATE_COLOR;  
             } else {
                 continue;
             }
 
-            al_draw_filled_rectangle(   view_x + cell_l * j, view_y + cell_l * i, view_x + cell_l * (j + 1),
-                                        view_y + cell_l * (i + 1), col);
+            al_draw_filled_rectangle(   view.x + view.cell_l * j, view.y + view.cell_l * i, view.x + view.cell_l * (j + 1),
+                                        view.y + view.cell_l * (i + 1), col);
         }
     }
-    
-    int car_length = (view_l/100)*4 / cell_l;
-    int xp = grid_dim/2, yp = grid_dim - car_length;
-    //get x and y for start and goal from cells position
-    float x_part = view_x + xp*cell_l + cell_l/2,   y_part = view_y + yp*cell_l + cell_l/2;
-    float x_goal = view_x + to_x*cell_l + cell_l/2, y_goal = view_y + to_y*cell_l + cell_l/2;
-    
-    float car_lenght = view_l/100*4;
-    float car_width = view_l/100*3;
-    al_draw_rectangle(  view_x + cell_l/2 + view_l/2 - car_width/2, view_y + view_l, 
-                        view_x + cell_l/2 + view_l/2 + car_width/2, view_y + view_l - car_lenght, 
-                        al_map_rgb(255, 255, 0),1);
-    al_draw_line(x_part, y_part, x_goal, y_goal, scan_col, 2);
 
-    x_goal = view_x + to_x2*cell_l + cell_l/2, y_goal = view_y + to_y2*cell_l + cell_l/2;
-    al_draw_line(x_part, y_part, x_goal, y_goal, scan_col, 2);
+    car_t car;
+    init_car(car, view);
+    
+    int xp = grid_dim/2, yp = grid_dim - car.length/view.cell_l;
 
-    al_draw_textf(font, quad_col, view_x, view_y + view_l, 0, "%f", estimated_speed);
+    al_draw_rectangle(  view.x + view.cell_l/2 + view.l/2 - car.width/2, view.y + view.l, 
+                        view.x + view.cell_l/2 + view.l/2 + car.width/2, view.y + view.l - car.length, 
+                        CAR_COLOR,1);
+                      
+    for(int i=0; i<msg->path_size-1; i++) {
+        int x1 = msg->path[i].x, y1 = msg->path[i].y, x2 = msg->path[i+1].x, y2 = msg->path[i+1].y;
+        
+        al_draw_filled_rectangle(view.x + view.cell_l * x1, view.y + view.cell_l * y1, view.x + view.cell_l * (x1 + 1),
+                                 view.y + view.cell_l * (y1 + 1), PATH_GRID_COLOR);
+        x1+=1;                         
+        al_draw_filled_rectangle(view.x + view.cell_l * x1, view.y + view.cell_l * y1, view.x + view.cell_l * (x1 + 1),
+                                 view.y + view.cell_l * (y1 + 1), PATH_GRID_COLOR);
+        x1-=2;
+        al_draw_filled_rectangle(view.x + view.cell_l * x1, view.y + view.cell_l * y1, view.x + view.cell_l * (x1 + 1),
+                            view.y + view.cell_l * (y1 + 1), PATH_GRID_COLOR);
+        x1+=1;                        
+        float_point_t s = grid2view(x1, y1, view);
+        float_point_t e = grid2view(x2, y2, view);
+        /*
+        float a = points_angle_rad(s.x, s.y, e.x, e.y);
+        float l = car.width/2;
+        al_draw_line(e.x, e.y, e.x + cos(a+M_PI/2)*l, e.y + sin(a+M_PI/2)*l, scan_col, 1);
+        al_draw_line(e.x, e.y, e.x + cos(a-M_PI/2)*l, e.y + sin(a-M_PI/2)*l, scan_col, 1);
+        */
+        al_draw_line(s.x, s.y, e.x, e.y, PATH_COLOR, 1);
+    }                    
+
+    int x = msg->path[msg->path_start].x, y = msg->path[msg->path_start].y;
+    float_point_t s = grid2view(xp, yp, view);
+    float_point_t e = grid2view(x, y, view);
+    al_draw_line(s.x, s.y, e.x, e.y, VIEW_COLOR, 2);
+
+
+    al_draw_textf(font, VIEW_COLOR, view.x, view.y + view.l, 0, "%f", msg->speed);
     al_flip_display();
 }
 
@@ -115,7 +110,6 @@ int main(int argc, char **argv) {
     ros::NodeHandle n;
 
     ros::Subscriber m_sub = n.subscribe("dinonav/stat", 1,   map_recv);
-    ros::Subscriber s_sub = n.subscribe("dinonav/speed", 1, speed_recv);
 
     ALLEGRO_DISPLAY *display = NULL;
 

@@ -12,7 +12,7 @@
 #include "race/drive_param.h"
 #include "std_msgs/Float32.h"
 
-extern ros::Publisher drive_pub, map_pub, speed_pub;
+ros::Publisher drive_pub, stat_pub;
 
 dinonav_t nav;
 float estimated_speed;
@@ -71,7 +71,8 @@ void init_view(view_t &view, int size) {
 }
 
 void init_car(car_t &car, view_t &view) {
-    car.length = (view.l/100)*4 / view.cell_l;
+    car.length = 4*view.cell_l;
+    car.width  = 3*view.cell_l;
 }
 
 /**
@@ -93,7 +94,7 @@ void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
     car_t car;
     init_car(car, view);
 
-    int xp = grid.size/2, yp = grid.size - car.length;
+    int xp = grid.size/2, yp = grid.size - car.length/view.cell_l;
     inflate(grid, xp, yp, 0, 3);
     int to_x = -1, to_y = -1;
     choosegate(grid, xp, yp, to_x, to_y);
@@ -101,20 +102,14 @@ void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
     path_t path = pathfinding(grid, xp, yp, to_x, to_y, nav.stop_cost);
 
     //get x and y for start and goal from cells position
-    float x_part = view.x + xp*view.cell_l + view.cell_l/2,   y_part = view.y + yp*view.cell_l + view.cell_l/2;
-    float x_goal = view.x + to_x*view.cell_l + view.cell_l/2, y_goal = view.y + to_y*view.cell_l + view.cell_l/2;
+    float_point_t part = grid2view(xp, yp, view);
+    float_point_t goal = grid2view(to_x, to_y, view);
 
     //compute angle for the steer
-    float ang  = points_angle(x_part, y_part, x_goal, y_goal);
+    float ang  = points_angle(part.x, part.y, goal.x, goal.y);
     
-    //compute angle ahead for the speed modulation
-    int ah_idx = path.start -4;
-    if(ah_idx < 0) ah_idx = 0;
-    point_t ahead_p = path.data[ah_idx];
-    x_goal = view.x + ahead_p.x*view.cell_l + view.cell_l/2;
-    y_goal = view.y + ahead_p.y*view.cell_l + view.cell_l/2;
-    float ang2 = points_angle(x_part, y_part, x_goal, y_goal);
-
+    float throttle = 0;
+    float steer = 0;
     if(nav.enable) {
         race::drive_param m;
         /*
@@ -134,6 +129,8 @@ void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
         if(m.angle >  100) m.angle=100;
         if(m.angle < -100) m.angle=-100;
 
+        throttle  = m.velocity;
+        steer = m.angle;
         drive_pub.publish(m);
     }
 
@@ -152,7 +149,10 @@ void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
 
         stat.path.push_back(point);
     }
-    map_pub.publish(stat);
+    stat.throttle = throttle;
+    stat.steer = steer;
+    stat.speed = estimated_speed;
+    stat_pub.publish(stat);
 
     PTIME_END()
     PTIME_STAMP(,DINONAV)
@@ -189,9 +189,11 @@ void pose_recv(const geometry_msgs::PoseStamped::ConstPtr& msg) {
     old_pose = pos;
     old_time = t;
 
+    /*
     std_msgs::Float32 m;
     m.data = estimated_speed;
     speed_pub.publish(m);
+    */
 }
 
 

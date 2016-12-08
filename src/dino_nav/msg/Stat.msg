@@ -6,3 +6,7 @@ int8[] grid
 int32 path_size 
 int32 path_start
 Point[] path
+
+float32 throttle
+float32 steer
+float32 speed

@@ -9,3 +9,10 @@ float points_angle(float x_part, float y_part, float x_goal, float y_goal) {
  
     return ang;
  }
+
+
+ float points_angle_rad(float x_part, float y_part, float x_goal, float y_goal) {
+ 
+    float ang = atan2(y_goal - y_part, x_goal - x_part);
+    return ang;
+ }
