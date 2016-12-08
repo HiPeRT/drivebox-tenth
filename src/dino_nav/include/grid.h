@@ -2,17 +2,10 @@
 #define GRID_H
 
 #include "dinonav.h"
+#include "common.h"
 
 #define GRID_MAX_DIM 1000
 #define GRID_MAX_GATES 64
-
-struct point_t {
-    int x, y;
-};
-
-struct float_point_t {
-    float x, y;
-};
 
 struct grid_t {
 

@@ -17,6 +17,74 @@
 
 ALLEGRO_FONT *font;
 
+
+void draw_rotated_rectangle(float_point_t o, float w, float h, float angle, ALLEGRO_COLOR col) {
+
+    float_point_t A, B, C, D;
+    /*
+        A -- B
+        |    |
+        D -- C
+    */
+    A.x = o.x - w/2; A.y = o.y - h/2;
+    B.x = o.x + w/2; B.y = o.y - h/2;
+    C.x = o.x + w/2; C.y = o.y + h/2;
+    D.x = o.x - w/2; D.y = o.y + h/2;
+
+    rotate_point(A, o, angle);
+    rotate_point(B, o, angle);
+    rotate_point(C, o, angle);
+    rotate_point(D, o, angle);
+
+    al_draw_line(A.x, A.y, B.x, B.y, col, 1);
+    al_draw_line(B.x, B.y, C.x, C.y, col, 1);
+    al_draw_line(C.x, C.y, D.x, D.y, col, 1);
+    al_draw_line(D.x, D.y, A.x, A.y, col, 1);
+}
+
+void draw_drive_params(view_t &view, float throttle, float steer, float speed) {
+
+    float_point_t origin;
+    origin.x = view.x;
+    origin.y = view.y + view.l + 10; 
+
+    float t_height = 80;
+    float t_width  = 10;
+
+    //throttle
+    ALLEGRO_COLOR t_col = al_map_rgba_f(0, 0, 0, 1);
+    float t_value = (throttle /100) * (t_height/2);
+    if(t_value < 0)
+        t_col.r = 1.0f;
+    else    
+        t_col.g = 1.0f;
+
+    al_draw_filled_rectangle(origin.x, origin.y + t_height/2, origin.x + t_width, origin.y + t_height/2 - t_value, t_col);
+    al_draw_rectangle(origin.x, origin.y, origin.x + t_width, origin.y + t_height, VIEW_COLOR, 1);
+
+    //steer
+    origin.x += t_width + 10;
+    float w_height = t_height/2;
+    float w_width = t_width;
+
+    float_point_t weel1o, weel2o;
+    weel1o.x = origin.x + w_width/2 + 15;
+    weel1o.y = origin.y + w_height/2;
+    weel2o.x = weel1o.x + 80;
+    weel2o.y = weel1o.y;
+    
+    float s_value = (steer/100) * M_PI/4;
+    al_draw_line(weel1o.x, weel1o.y, weel2o.x, weel2o.y, VIEW_COLOR, 1);
+    draw_rotated_rectangle(weel1o, w_width, w_height, s_value, VIEW_COLOR);
+    draw_rotated_rectangle(weel2o, w_width, w_height, s_value, VIEW_COLOR);
+
+    al_draw_textf(font, VIEW_COLOR, origin.x, origin.y + w_height +5, 0,  "throttle: %4.0f", throttle);
+    al_draw_textf(font, VIEW_COLOR, origin.x, origin.y + w_height +25, 0, "steer:    %4.0f", steer);
+
+}
+
+
+
 void map_recv(const dino_nav::Stat::ConstPtr& msg) {
     ROS_INFO("stat recived");
     al_clear_to_color(al_map_rgb(0,0,0));
@@ -26,7 +94,7 @@ void map_recv(const dino_nav::Stat::ConstPtr& msg) {
     
     view_t view;
     view.x = 10; view.y = 10;
-    view.l = 512;
+    view.l = 400;
     view.cell_l = view.l / float(grid_dim);
 
     for(int i=0; i<grid_dim; i++) {
@@ -97,7 +165,8 @@ void map_recv(const dino_nav::Stat::ConstPtr& msg) {
     al_draw_line(s.x, s.y, e.x, e.y, VIEW_COLOR, 2);
 
 
-    al_draw_textf(font, VIEW_COLOR, view.x, view.y + view.l, 0, "%f", msg->speed);
+    //al_draw_textf(font, VIEW_COLOR, view.x, view.y + view.l, 0, "%f", msg->speed);
+    draw_drive_params(view, msg->throttle, msg->steer, msg->speed);
     al_flip_display();
 }
 
@@ -118,7 +187,7 @@ int main(int argc, char **argv) {
         return -1;
     }
 
-    display = al_create_display(600, 600);
+    display = al_create_display(420, 600);
     if(!display) {
         fprintf(stderr, "failed to create display!\n");
         return -1;
@@ -130,8 +199,8 @@ int main(int argc, char **argv) {
     al_init_font_addon(); // initialize the font addon
     al_init_ttf_addon();// initialize the ttf (True Type Font) addon
 
-    font = al_load_ttf_font("/usr/share/fonts/truetype/freefont/FreeMono.ttf",20,0 );
-
+    font = al_load_ttf_font("/usr/share/fonts/truetype/freefont/FreeMono.ttf", 15,0 );
+    
     if (!font){
         fprintf(stderr, "Could not load font.\n");
         return -1;

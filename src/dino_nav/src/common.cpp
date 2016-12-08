@@ -1,4 +1,5 @@
 #include <math.h> 
+#include "common.h"
 
 float points_angle(float x_part, float y_part, float x_goal, float y_goal) {
  
@@ -15,4 +16,11 @@ float points_angle(float x_part, float y_part, float x_goal, float y_goal) {
  
     float ang = atan2(y_goal - y_part, x_goal - x_part);
     return ang;
+ }
+
+ void rotate_point(float_point_t &p, float_point_t &o, float theta) {
+     int x = o.x + (p.x - o.x)*cos(theta) - (p.y - o.y)*sin(theta);
+     int y = o.y + (p.y - o.y)*cos(theta) + (p.x - o.x)*sin(theta);
+ 
+     p.x = x; p.y = y;
  }
