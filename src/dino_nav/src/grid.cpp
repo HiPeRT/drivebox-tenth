@@ -39,6 +39,9 @@ void grid_line(grid_t &grid, int x1, int y1, int x2, int y2) {
     float x_inc = -(float)dx / (float) steps;
     float y_inc = -(float)dy / (float) steps;
 
+    if(steps > grid.size)
+        return;
+
     float x = x1, y = y1;
     for(int v=0; v < steps; v++)
     {

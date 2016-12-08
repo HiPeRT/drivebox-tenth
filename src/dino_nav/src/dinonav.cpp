@@ -1,6 +1,7 @@
 #include <iostream>
 #include <math.h>
 
+#include "ros/ros.h"
 #include "grid.h"
 #include "pathfind.h"
 #include "common.h"
@@ -75,6 +76,9 @@ void init_car(car_t &car, view_t &view) {
 */
 void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
     //ROS_INFO("Scan recived: [%f]", msg->scan_time);
+    PTIME_INIT()
+    PTIME_START()
+
     view_t view;
     init_view(view, nav.grid_dim);
 
@@ -150,6 +154,8 @@ void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
     path_p.data = vpth;
     path_pub.publish(path_p);
     */
+    PTIME_END()
+    PTIME_STAMP(,DINONAV)
 }
 
 
