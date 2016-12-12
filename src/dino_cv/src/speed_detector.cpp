@@ -74,13 +74,21 @@ public:
 
         cvtColor(image, gray, cv::COLOR_BGR2GRAY);
 
-        if(points[0].size() < 50) {
-            // automatic initialization
-            printf("init\n");
-            goodFeaturesToTrack(gray, points[1], MAX_COUNT, 0.01, 10, mask, 3, 0, 0.04);
+
+        // search for new points
+        int ask = MAX_COUNT - points[0].size();
+        if(ask > MAX_COUNT /10) {
+            printf("new points\n");
+            goodFeaturesToTrack(gray, points[1], ask, 0.01, 2, mask, 3, 0, 0.04);
             cornerSubPix(gray, points[1], subPixWinSize, cv::Size(-1,-1), termcrit);
         
-        } else if(!points[0].empty()) {
+            int old_size = points[0].size();
+            points[0].resize(old_size + points[1].size());
+            for(int i=0; i<points[1].size(); i++)
+                points[0][old_size + i] = points[1][i];
+        }
+        
+        if(!points[0].empty()) {
             cv::vector<uchar> status;
             cv::vector<float> err;
             
