@@ -173,3 +173,7 @@ pkg_search_module(ZBAR zbar)
 include_directories(  ${catkin_INCLUDE_DIRS}  ${OpenCV_INCLUDE_DIRS} )
 add_executable(qr_detector src/qr_detector.cpp)
 target_link_libraries(qr_detector ${OpenCV_LIBRARIES} ${catkin_LIBRARIES} ${ZBAR_LIBRARIES})
+
+add_executable(speed_detector src/speed_detector.cpp)
+target_link_libraries(speed_detector ${OpenCV_LIBRARIES} ${catkin_LIBRARIES})
+
