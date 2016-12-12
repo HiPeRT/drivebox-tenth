@@ -22,9 +22,6 @@ private:
     image_transport::Publisher image_pub_;
     ros::Publisher start_pub_;
 
-    cv::Point2f point;
-    bool addRemovePt;
-    bool needToInit;
     cv::Mat gray, prevGray;
     cv::vector<cv::Point2f> points[2];
   
@@ -41,9 +38,6 @@ public:
 
         if(VIEW)
             cv::namedWindow(OPENCV_WINDOW);
-
-        addRemovePt = false;
-        needToInit = false;
     }
 
     ~ImageConverter() {
@@ -63,20 +57,28 @@ public:
             return;
         }
 
+        cv::Mat image = cv_ptr->image;
+
+        float w = image.size().width;
+        float h = image.size().height;
+        cv::Point2f p1(w/4, h/4);
+        cv::Point2f p2(w - p1.x, h - p1.y);
+        
+        cv::Mat mask(image.size(), CV_8UC1);
+        mask.setTo(cv::Scalar::all(1));
+        rectangle(mask, p1, p2, cv::Scalar(0,0,0), -1, 8, 0);
+
+
         cv::TermCriteria termcrit(CV_TERMCRIT_ITER|CV_TERMCRIT_EPS, 20, 0.03);
         cv::Size subPixWinSize(10,10), winSize(31,31);
 
-        cv::Mat image = cv_ptr->image;
-
-        // Retrieve left color image
         cvtColor(image, gray, cv::COLOR_BGR2GRAY);
 
-        if(needToInit) {
+        if(points[0].size() < 50) {
             // automatic initialization
             printf("init\n");
-            goodFeaturesToTrack(gray, points[1], MAX_COUNT, 0.01, 10, cv::Mat(), 3, 0, 0.04);
+            goodFeaturesToTrack(gray, points[1], MAX_COUNT, 0.01, 10, mask, 3, 0, 0.04);
             cornerSubPix(gray, points[1], subPixWinSize, cv::Size(-1,-1), termcrit);
-            addRemovePt = false;
         
         } else if(!points[0].empty()) {
             cv::vector<uchar> status;
@@ -89,49 +91,25 @@ public:
                                     status, err, winSize, 3, termcrit, 0, 0.001);
             size_t i, k;
             for(i=k=0; i<points[1].size(); i++) {
-                if(addRemovePt && norm(point - points[1][i]) <= 5 ) {
-                    addRemovePt = false;
-                    continue;
-                }
             
                 if(!status[i])
                     continue;
            
                 points[1][k++] = points[1][i];
-                circle(image, points[1][i], 10, cv::Scalar(0,255,0), -1, 8);
+                line(image, points[0][i], points[1][i], cv::Scalar(0,0,255), 1, 8, 0);
+                circle(image, points[1][i], 5, cv::Scalar(0,255,0), 1, 8);
             }
 
             points[1].resize(k);
         }
 
-        if(addRemovePt && points[1].size() < (size_t)MAX_COUNT) {
-            cv::vector<cv::Point2f> tmp;
-            tmp.push_back(point);
-            cornerSubPix( gray, tmp, winSize, cv::Size(-1,-1), termcrit);
-            points[1].push_back(tmp[0]);
-            addRemovePt = false;
-        }
-        needToInit = false;
+        rectangle(image, p1, p2, cv::Scalar(255,0,0), 1, 8, 0);
 
         // Update GUI Window
         if(VIEW)    
             cv::imshow(OPENCV_WINDOW, cv_ptr->image);
 
-        char c = (char)cv::waitKey(10);
-        if( c == 27 )
-            return;
-
-        switch( c ) {    
-        case 'r':
-                needToInit = true;
-                break;
-        case 'c':
-                points[0].clear();
-                points[1].clear();
-                break;
-        case 'n':
-                break;
-        }
+        cv::waitKey(10);
 
         std::swap(points[1], points[0]);
         cv::swap(prevGray, gray);
