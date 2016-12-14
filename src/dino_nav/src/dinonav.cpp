@@ -15,6 +15,8 @@
 ros::Publisher drive_pub, stat_pub;
 
 dinonav_t nav;
+
+geometry_msgs::Point pose;
 float estimated_speed;
 
 
@@ -152,6 +154,7 @@ void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
     stat.throttle = throttle;
     stat.steer = steer;
     stat.speed = estimated_speed;
+    stat.pose = pose;
     stat_pub.publish(stat);
 
     PTIME_END()
@@ -208,6 +211,7 @@ void pose_recv(const geometry_msgs::PoseStamped::ConstPtr& msg) {
 */
 void odom_recv(const nav_msgs::Odometry::ConstPtr& msg) {
 
+    pose = msg->pose.pose.position;
     update_speed(msg->pose.pose.position, msg->header.stamp);
 }
 

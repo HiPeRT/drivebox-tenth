@@ -10,3 +10,4 @@ Point[] path
 float32 throttle
 float32 steer
 float32 speed
+geometry_msgs/Point pose
