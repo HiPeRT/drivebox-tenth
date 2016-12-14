@@ -16,7 +16,7 @@ ros::Publisher drive_pub, stat_pub;
 
 dinonav_t nav;
 
-geometry_msgs::Point pose;
+geometry_msgs::Pose pose;
 float estimated_speed;
 
 
@@ -202,7 +202,8 @@ void update_speed(geometry_msgs::Point p, ros::Time time) {
     PoseStamped callback
 */
 void pose_recv(const geometry_msgs::PoseStamped::ConstPtr& msg) {
-
+    
+    pose = msg->pose;
     update_speed(msg->pose.position, msg->header.stamp);
 }
 
@@ -211,7 +212,7 @@ void pose_recv(const geometry_msgs::PoseStamped::ConstPtr& msg) {
 */
 void odom_recv(const nav_msgs::Odometry::ConstPtr& msg) {
 
-    pose = msg->pose.pose.position;
+    pose = msg->pose.pose;
     update_speed(msg->pose.pose.position, msg->header.stamp);
 }
 

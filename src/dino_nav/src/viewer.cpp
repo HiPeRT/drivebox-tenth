@@ -15,7 +15,9 @@
 #include "common.h"
 #include "viewer.h"
 
+ALLEGRO_DISPLAY *display = NULL;
 ALLEGRO_FONT *font;
+ALLEGRO_BITMAP *path_bmp = NULL;
 
 
 void draw_rotated_rectangle(float_point_t o, float w, float h, float angle, ALLEGRO_COLOR col) {
@@ -108,7 +110,32 @@ void draw_drive_params(view_t &view, float throttle, float steer, float speed) {
     al_draw_textf(font, VIEW_COLOR, origin.x + t_height/2, origin.y + w_height +25, 0, "%2.1f m/s", speed);
 }
 
+void draw_pose(view_t &view, float x, float y) {
+    
+    view_t v; 
+    v.x = view.x + view.l + 10;
+    v.y = view.y;
+    v.l = view.l;
 
+    if(path_bmp == NULL)
+        path_bmp = al_create_bitmap(v.l, v.l);
+    x = x*10;
+    y = y*10;
+
+    float v_startx = v.x + v.l/2;
+    float v_starty = v.y + v.l/2;
+    float v_px = v_startx + x;
+    float v_py = v_starty + y;
+    al_draw_rectangle(v.x, v.y, v.x + v.l, v.y + v.l, VIEW_COLOR, 1);
+
+    al_set_target_bitmap(path_bmp);
+        al_put_pixel(v.l/2 +x, v.l/2 +y, PATH_COLOR);
+    al_set_target_bitmap(al_get_backbuffer(display));
+
+    al_draw_bitmap(path_bmp, v.x, v.y, 0);
+    al_draw_circle(v_startx, v_starty, 2, PATH_COLOR, 1);
+    al_draw_circle(v_px, v_py, 2, VIEW_COLOR, 1);
+}
 
 void map_recv(const dino_nav::Stat::ConstPtr& msg) {
     ROS_INFO("stat recived");
@@ -203,6 +230,9 @@ void map_recv(const dino_nav::Stat::ConstPtr& msg) {
 
     //al_draw_textf(font, VIEW_COLOR, view.x, view.y + view.l, 0, "%f", msg->speed);
     draw_drive_params(view, msg->throttle, msg->steer, msg->speed);
+
+    draw_pose(view, msg->pose.position.x, msg->pose.position.y);
+
     al_flip_display();
 }
 
@@ -216,14 +246,12 @@ int main(int argc, char **argv) {
 
     ros::Subscriber m_sub = n.subscribe("dinonav/stat", 1,   map_recv);
 
-    ALLEGRO_DISPLAY *display = NULL;
-
     if(!al_init()) {
         fprintf(stderr, "failed to initialize allegro!\n");
         return -1;
     }
 
-    display = al_create_display(420, 600);
+    display = al_create_display(840, 600);
     if(!display) {
         fprintf(stderr, "failed to create display!\n");
         return -1;

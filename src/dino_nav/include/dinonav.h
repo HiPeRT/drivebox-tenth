@@ -2,6 +2,7 @@
 #define DINONAV_H
 
 #include "sensor_msgs/LaserScan.h"
+#include "geometry_msgs/Pose.h"
 #include "geometry_msgs/PoseStamped.h"
 #include "nav_msgs/Odometry.h"
 
