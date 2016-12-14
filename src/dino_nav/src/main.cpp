@@ -15,6 +15,7 @@ int main(int argc, char **argv) {
 
     ros::Subscriber ssub = n.subscribe("scan", 1, laser_recv);
     ros::Subscriber psub = n.subscribe("pose_stamped", 1, pose_recv);
+    ros::Subscriber osub = n.subscribe("zed/odom", 1, odom_recv);
 
     drive_pub = n.advertise<race::drive_param>("drive_parameters", 1);
     stat_pub = n.advertise<dino_nav::Stat>("dinonav/stat", 1);

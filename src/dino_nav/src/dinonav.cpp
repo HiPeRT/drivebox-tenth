@@ -159,10 +159,8 @@ void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
 }
 
 
-/**
-    PoseStamped callback
-*/
-void pose_recv(const geometry_msgs::PoseStamped::ConstPtr& msg) {
+void update_speed(geometry_msgs::Point p, ros::Time time) {
+
     static geometry_msgs::Point old_pose;
     static ros::Time old_time;
     static bool init=false;
@@ -172,11 +170,11 @@ void pose_recv(const geometry_msgs::PoseStamped::ConstPtr& msg) {
         old_pose.z = 0;
         init = true;
 
-        old_time = msg->header.stamp;
+        old_time = time;
     }
 
-    geometry_msgs::Point pos = msg->pose.position;
-    ros::Time t = msg->header.stamp;
+    geometry_msgs::Point pos = p;
+    ros::Time t = time;
 
     double dx = pos.x - old_pose.x;
     double dy = pos.y - old_pose.y;
@@ -194,6 +192,23 @@ void pose_recv(const geometry_msgs::PoseStamped::ConstPtr& msg) {
     m.data = estimated_speed;
     speed_pub.publish(m);
     */
+    
+}
+
+/**
+    PoseStamped callback
+*/
+void pose_recv(const geometry_msgs::PoseStamped::ConstPtr& msg) {
+
+    update_speed(msg->pose.position, msg->header.stamp);
+}
+
+/**
+    Odometry callback
+*/
+void odom_recv(const nav_msgs::Odometry::ConstPtr& msg) {
+
+    update_speed(msg->pose.pose.position, msg->header.stamp);
 }
 
 
