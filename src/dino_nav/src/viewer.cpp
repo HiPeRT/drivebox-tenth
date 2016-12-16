@@ -6,8 +6,12 @@
 #include <allegro5/allegro_ttf.h>
 
 #include "ros/ros.h"
+#include "tf/LinearMath/Quaternion.h"
+#include "tf/LinearMath/Matrix3x3.h"
 #include "std_msgs/Float32.h"
 #include "dino_nav/Stat.h"
+#include "geometry_msgs/Pose.h"
+#include "geometry_msgs/Quaternion.h"
 
 #include "grid.h"
 #include "pathfind.h"
@@ -110,7 +114,7 @@ void draw_drive_params(view_t &view, float throttle, float steer, float speed) {
     al_draw_textf(font, VIEW_COLOR, origin.x + t_height/2, origin.y + w_height +25, 0, "%2.1f m/s", speed);
 }
 
-void draw_pose(view_t &view, float x, float y) {
+void draw_pose(view_t &view, geometry_msgs::Pose pose) {
     
     view_t v; 
     v.x = view.x + view.l + 10;
@@ -119,8 +123,8 @@ void draw_pose(view_t &view, float x, float y) {
 
     if(path_bmp == NULL)
         path_bmp = al_create_bitmap(v.l, v.l);
-    x = x*10;
-    y = y*10;
+    float x = pose.position.x*10;
+    float y = pose.position.y*10;
 
     float v_startx = v.x + v.l/2;
     float v_starty = v.y + v.l/2;
@@ -135,6 +139,13 @@ void draw_pose(view_t &view, float x, float y) {
     al_draw_bitmap(path_bmp, v.x, v.y, 0);
     al_draw_circle(v_startx, v_starty, 2, PATH_COLOR, 1);
     al_draw_circle(v_px, v_py, 2, VIEW_COLOR, 1);
+
+    tf::Quaternion q(   pose.orientation.x, pose.orientation.y,
+                        pose.orientation.z, pose.orientation.w);
+    double roll, pitch, yaw;
+    tf::Matrix3x3(q).getRPY(roll, pitch, yaw);
+    al_draw_line(v_px, v_py, v_px+cos(yaw)*10, v_py+sin(yaw)*10, VIEW_COLOR, 1);
+    al_draw_textf(font, VIEW_COLOR, v.x, v.y + v.l +5, 0, "yaw: %.3f", yaw);
 }
 
 void map_recv(const dino_nav::Stat::ConstPtr& msg) {
@@ -231,7 +242,7 @@ void map_recv(const dino_nav::Stat::ConstPtr& msg) {
     //al_draw_textf(font, VIEW_COLOR, view.x, view.y + view.l, 0, "%f", msg->speed);
     draw_drive_params(view, msg->throttle, msg->steer, msg->speed);
 
-    draw_pose(view, msg->pose.position.x, msg->pose.position.y);
+    draw_pose(view, msg->pose);
 
     al_flip_display();
 }
