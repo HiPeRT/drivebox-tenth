@@ -237,11 +237,12 @@ void map_recv(const dino_nav::Stat::ConstPtr& msg) {
         */
     }                    
 
-    int x = msg->path[msg->path_start].x, y = msg->path[msg->path_start].y;
-    float_point_t s = grid2view(xp, yp, view);
-    float_point_t e = grid2view(x, y, view);
-    al_draw_line(s.x, s.y, e.x, e.y, VIEW_COLOR, 2);
-
+    if(msg->path_start > 0) {
+        int x = msg->path[msg->path_start].x, y = msg->path[msg->path_start].y;
+        float_point_t s = grid2view(xp, yp, view);
+        float_point_t e = grid2view(x, y, view);
+        al_draw_line(s.x, s.y, e.x, e.y, VIEW_COLOR, 2);
+    }
 
     //al_draw_textf(font, VIEW_COLOR, view.x, view.y + view.l, 0, "%f", msg->speed);
     draw_drive_params(view, msg->throttle, msg->steer, msg->speed);

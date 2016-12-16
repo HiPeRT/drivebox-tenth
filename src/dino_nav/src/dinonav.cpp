@@ -101,7 +101,7 @@ void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
     car_t car;
     init_car(car, view, nav.zoom);
 
-    int xp = grid.size/2, yp = grid.size - car.length/view.cell_l;
+    int xp = grid.size/2, yp = grid.size - (car.length/10*8)/view.cell_l;
     inflate(grid, xp, yp, 0, 3);
     int to_x = -1, to_y = -1;
     choosegate(grid, xp, yp, to_x, to_y);
