@@ -82,6 +82,10 @@ path_t pathfinding(grid_t &grid, int xp, int yp, int &xa, int &ya, int stop_cost
 
     //path grid
     grid_t path_grid;
+    static int *path_addr=NULL;
+    if(path_addr == NULL)
+        path_addr = new int[GRID_MAX_DIM*GRID_MAX_DIM];
+    path_grid.data = path_addr;
     init_grid(path_grid, grid.size);
 
     //Algoritmo BFS:
@@ -122,6 +126,7 @@ path_t pathfinding(grid_t &grid, int xp, int yp, int &xa, int &ya, int stop_cost
         x = xa;
         y = ya;
     }
+    
     int iter = 0;
 
     while(iter <MAX_ITER && (x != xp || y != yp) ) {

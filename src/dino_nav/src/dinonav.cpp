@@ -89,6 +89,10 @@ void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
     init_view(view, nav.grid_dim);
 
     grid_t grid;
+    static int *grid_addr=NULL;
+    if(grid_addr == NULL)
+        grid_addr = new int[GRID_MAX_DIM*GRID_MAX_DIM];
+    grid.data = grid_addr;
     init_grid(grid, nav.grid_dim);
 
     discretize_laserscan(grid, view, msg);

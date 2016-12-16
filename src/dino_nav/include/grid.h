@@ -9,7 +9,7 @@
 
 struct grid_t {
 
-    int data[GRID_MAX_DIM*GRID_MAX_DIM];
+    int *data;
     int size;
 
     point_t gates[GRID_MAX_GATES][2];
