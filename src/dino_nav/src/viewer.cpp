@@ -193,7 +193,7 @@ void map_recv(const dino_nav::Stat::ConstPtr& msg) {
     car_t car;
     init_car(car, view, msg->zoom);
     
-    int xp = grid_dim/2, yp = grid_dim - car.length/view.cell_l;
+    int xp = grid_dim/2, yp = grid_dim - (car.length/10*8)/view.cell_l;
 
     al_draw_rectangle(  view.x + view.cell_l/2 + view.l/2 - car.width/2, view.y + view.l, 
                         view.x + view.cell_l/2 + view.l/2 + car.width/2, view.y + view.l - car.length, 
