@@ -191,7 +191,7 @@ void map_recv(const dino_nav::Stat::ConstPtr& msg) {
     }
 
     car_t car;
-    init_car(car, view);
+    init_car(car, view, msg->zoom);
     
     int xp = grid_dim/2, yp = grid_dim - car.length/view.cell_l;
 
@@ -220,17 +220,21 @@ void map_recv(const dino_nav::Stat::ConstPtr& msg) {
         right.x = s.x + cos(a-M_PI/2)*l;
         right.y = s.y + sin(a-M_PI/2)*l;
 
+        /*
         al_draw_line(s.x, s.y, left.x, left.y, PATH_COLOR, 1);
         al_draw_line(s.x, s.y, right.x, right.y, PATH_COLOR, 1);
-        
+        */
+
         point_t lg = view2grid(left.x, left.y, view);
         point_t rg = view2grid(right.x, right.y, view);
 
         al_draw_line(s.x, s.y, e.x, e.y, PATH_COLOR, 1);
+        /*
         al_draw_filled_rectangle(   view.x + view.cell_l * lg.x, view.y + view.cell_l * lg.y, view.x + view.cell_l * (lg.x + 1),
                                     view.y + view.cell_l * (lg.y + 1), PATH_GRID_COLOR);
         al_draw_filled_rectangle(   view.x + view.cell_l * rg.x, view.y + view.cell_l * rg.y, view.x + view.cell_l * (rg.x + 1),
                                     view.y + view.cell_l * (rg.y + 1), PATH_GRID_COLOR);                            
+        */
     }                    
 
     int x = msg->path[msg->path_start].x, y = msg->path[msg->path_start].y;

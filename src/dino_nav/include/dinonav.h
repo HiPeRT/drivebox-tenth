@@ -40,6 +40,6 @@ void pose_recv(const geometry_msgs::PoseStamped::ConstPtr& msg);
 void odom_recv(const nav_msgs::Odometry::ConstPtr& msg);
 
 void init_view(view_t &view, int size);
-void init_car(car_t &car, view_t &view);
+void init_car(car_t &car, view_t &view, float zoom);
 
 #endif //DINONAV_H

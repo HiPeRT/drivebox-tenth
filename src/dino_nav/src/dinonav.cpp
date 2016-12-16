@@ -72,9 +72,10 @@ void init_view(view_t &view, int size) {
     view.cell_l = view.l / float(size);
 }
 
-void init_car(car_t &car, view_t &view) {
-    car.length = 4*view.cell_l;
-    car.width  = 3*view.cell_l;
+void init_car(car_t &car, view_t &view, float zoom) {
+    float mul = (view.l/100);
+    car.length = (18.0f/zoom)*mul;     
+    car.width  = (10.0f/zoom)*mul;
 }
 
 /**
@@ -98,7 +99,7 @@ void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
     discretize_laserscan(grid, view, msg);
 
     car_t car;
-    init_car(car, view);
+    init_car(car, view, nav.zoom);
 
     int xp = grid.size/2, yp = grid.size - car.length/view.cell_l;
     inflate(grid, xp, yp, 0, 3);
@@ -145,6 +146,7 @@ void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
     stat.grid_size = grid.size;
     std::vector<signed char> vgrd(grid.data, grid.data+(grid.size*grid.size));
     stat.grid = vgrd;
+    stat.zoom = nav.zoom;
 
     stat.path_size = path.size;
     stat.path_start = path.start;
