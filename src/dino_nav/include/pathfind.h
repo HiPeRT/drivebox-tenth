@@ -4,23 +4,26 @@
 #include "grid.h"
 
 /** Struttura contenente i dati dei nodi utilizzati nel ::pathfinding */
-struct nodo {
-    int x;
-    int y;
-    nodo *succ;
-    nodo *prec;
+struct node_t {
+    float_point_t pos;
+    float angle;
+    float cost;
+
+    //this are for node identification
+    node_t *parent;
+    int steer;
 };
 
 const int MAX_ITER = 500;
 
 struct path_t {
 
-    point_t data[MAX_ITER];
+    node_t data[MAX_ITER];
     int size;
 
     int start;
 };
 
-path_t pathfinding(grid_t &grid, int xp, int yp, int &xa, int &ya, int stop_cost);
+path_t pathfinding(grid_t &grid, view_t &view, float_point_t &s, float_point_t &e);
 
 #endif //PATHFIND_H

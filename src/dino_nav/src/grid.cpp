@@ -141,18 +141,21 @@ int getgrid(grid_t &grid, int x, int y) {
 void inflate(grid_t &grid, int x, int y, int val, int n) {
     if(n == 0)
         return;
+    
+    int v = getgrid(grid, x, y);
+    int newv = v+val;
+    if(newv > WALL)
+        newv = WALL;
+    setgrid(grid, x, y, newv);
 
-    if(getgrid(grid, x, y) != WALL)
-        setgrid(grid, x, y, val);
-
-    inflate(grid, x-1, y-1, val, n -1);
-    inflate(grid, x-1, y, val, n -1);
-    inflate(grid, x-1, y+1, val, n -1);
-    inflate(grid, x+1, y-1, val, n -1);
-    inflate(grid, x+1, y, val, n -1);
-    inflate(grid, x+1, y+1, val, n -1);
-    inflate(grid, x, y-1, val, n -1);
-    inflate(grid, x, y+1, val, n -1);
+    inflate(grid, x-1, y-1, val-1, n -1);
+    inflate(grid, x-1, y, val-1, n -1);
+    inflate(grid, x-1, y+1, val-1, n -1);
+    inflate(grid, x+1, y-1, val-1, n -1);
+    inflate(grid, x+1, y, val-1, n -1);
+    inflate(grid, x+1, y+1, val-1, n -1);
+    inflate(grid, x, y-1, val-1, n -1);
+    inflate(grid, x, y+1, val-1, n -1);
 }
 
 void choosegate(grid_t &grid, int px, int py, int &to_x, int &to_y) {

@@ -17,9 +17,12 @@ struct dinonav_t {
     int     grid_dim;
     float   zoom;
     bool    enable;
+
+    float steer_cost, dist_gain, inflation_cost;
 };
 
-enum grid_vals { EMPTY, WALL, INFLATED, GATE };
+const int EMPTY = 0;
+const int WALL = 100;
 
 struct view_t {
 

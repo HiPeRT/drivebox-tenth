@@ -24,3 +24,10 @@ float points_angle(float x_part, float y_part, float x_goal, float y_goal) {
  
      p.x = x; p.y = y;
  }
+
+
+ float points_dst(float_point_t &a, float_point_t &b) {
+     float dx = a.x - b.x;
+     float dy = a.y - b.y;
+     return sqrt(dx*dx + dy*dy);
+ }

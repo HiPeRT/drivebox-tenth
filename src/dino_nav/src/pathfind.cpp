@@ -1,212 +1,110 @@
 //
 // Created by cecco on 24/11/16.
 //
+
 #include <iostream>
 #include <math.h>
 #include <stdio.h>
+#include <queue>  
+#include <algorithm> 
+#include <vector>   
+
 
 #include "pathfind.h"
 #include "dinonav.h"
 
-static void eject(nodo * &testa, nodo* &coda, int &x, int &y) {
-    x = testa->x;
-    y = testa->y;
+extern dinonav_t nav;
 
-    nodo *tmp = testa->succ;
-    delete [] testa;
-    if (coda == testa)
-        coda = testa = tmp;
-    else
-        testa = tmp;
-}
 
-static void inject(nodo * &testa, nodo* &coda, int x, int y) {
-    nodo *n = new nodo;
+class node_comp {
+    bool reverse;
 
-    n->x = x;
-    n->y = y;
-    if (testa != NULL) {
-        n->prec = coda;
-        n->succ = NULL;
-        coda->succ = n;
-        coda = n;
-    } else {
-        testa = coda = n;
-        n->prec = NULL;
-        n->succ = NULL;
+public:
+    node_comp(const bool& revparam=false) {
+        reverse=revparam;
     }
-
-}
-
-int gridval(grid_t &path, int x, int y) {
-    int val = getgrid(path, x, y);
-    if(val <= 0)
-        return 999999; //as infinite
-
-    return val;
-}
-
-int bigger_x, bigger_y, bigger_value;
-
-bool gridcheck(grid_t &path, grid_t &grid, int ox, int oy, int x, int y) {
-
-    int pos = y*grid.size + x;
-    if(x<0 || x >= grid.size || y<0 || y >= grid.size)
-        return false;
-
-    if (grid.data[pos] == 0 && path.data[pos] == 0) {
-        int val = path.data[oy*grid.size + ox] +1;
-        path.data[y*grid.size + x] = val;
-
-        if(val > bigger_value) {
-            bigger_value = val;
-            bigger_x = x;
-            bigger_y = y;
-        }
-        return true;
+  
+    bool operator() (const node_t *a, const node_t *b) const {
+        if (reverse) 
+            return (a->cost<b->cost);
+        else 
+            return (a->cost>b->cost);
     }
-    return false;
+};
+
+const int NEIGHTBOURS_N = 5;
+const int NEIGHTBOURS[NEIGHTBOURS_N] = { -100, -50, 0, 50, 100 };
+float cell_l = 400.0/20.0;
+float car_l = cell_l*4;
+
+void get_neighbours(node_t *node, node_t *nbrs) {
+
+    for(int i=0; i< NEIGHTBOURS_N; i++) {
+        node_t *n = &nbrs[i];
+
+        n->steer = NEIGHTBOURS[i];
+        n->parent = node;
+
+        n->cost = 0;
+        float steer_ang = ((float) n->steer) /100.0 * M_PI/4; 
+        n->pos.x = node->pos.x + cos(node->angle + steer_ang)*cell_l;
+        n->pos.y = node->pos.y + sin(node->angle + steer_ang)*cell_l;
+        n->angle = node->angle + (cell_l/car_l) * tan(steer_ang);
+    }
 }
 
 
-void init_path(path_t &path) {
-    path.size = 0;
-    path.start = 0;
-}
+path_t pathfinding(grid_t &grid, view_t &view, float_point_t &s, float_point_t &e) {
 
-path_t pathfinding(grid_t &grid, int xp, int yp, int &xa, int &ya, int stop_cost)
-{
-    //path to calc
-    path_t path;
-    init_path(path);
+    std::priority_queue<node_t*, std::vector<node_t*>, node_comp> open;
 
-    //path grid
-    grid_t path_grid;
-    static int *path_addr=NULL;
-    if(path_addr == NULL)
-        path_addr = new int[GRID_MAX_DIM*GRID_MAX_DIM];
-    path_grid.data = path_addr;
-    init_grid(path_grid, grid.size);
+    const int MAX_IT = 10000;
+    static node_t *nodes = NULL;
+    if(nodes == NULL)
+        nodes = new node_t[MAX_IT*NEIGHTBOURS_N];
 
-    //Algoritmo BFS:
-    nodo *testa = NULL;
-    nodo *coda = NULL;
-
-    inject(testa, coda, xp, yp);
-
-    setgrid(path_grid, xp, yp, 1);    //partenza
-    bigger_x = xp;
-    bigger_y = yp;
-    bigger_value = 1;
-
-    while(testa != NULL) {
-
-        int x, y;
-        eject(testa, coda, x, y);
-
-        if(gridcheck(path_grid, grid, x, y, x+1, y))
-            inject(testa, coda, x+1, y);
-
-        if(gridcheck(path_grid, grid, x, y, x-1, y))
-            inject(testa, coda, x-1, y);
-
-        if(gridcheck(path_grid, grid, x, y, x, y-1))
-            inject(testa, coda, x, y-1);
-
-        if(gridcheck(path_grid, grid, x, y, x, y+1))
-            inject(testa, coda, x, y+1);
-    }
-
-    //find path
-    int x,y;
-    if(xa == -1) {
-        x = bigger_x;
-        y = bigger_y;
-    } else {
-        x = xa;
-        y = ya;
-    }
+    int n_nodes = 0;
+    node_t *start = &nodes[n_nodes++];
+    start->pos = s;
+    start->angle = -M_PI/2;
+    start->cost = 0;
+    start->parent = NULL;
+    start->steer = 0;
+    open.push(start);
     
-    int iter = 0;
+    point_t end_p = view2grid(e.x, e.y, view);
 
-    while(iter <MAX_ITER && (x != xp || y != yp) ) {
-        iter++;
 
-        int a[8];
-        a[0] = gridval(path_grid, x+1, y-1);
-        a[1] = gridval(path_grid, x+1, y);
-        a[2] = gridval(path_grid, x+1, y+1);
-        a[3] = gridval(path_grid, x-1, y-1);
-        a[4] = gridval(path_grid, x-1, y);
-        a[5] = gridval(path_grid, x-1, y+1);
-        a[6] = gridval(path_grid, x,   y-1);
-        a[7] = gridval(path_grid, x,   y+1);
+    node_t *n;   
+    for(int j=0; open.size()>0 && j<MAX_IT; j++) {
+        n = open.top();
+        open.pop();
 
-        int min_id = 0;
-        int min_val = a[0];
-        for(int i=1; i<8; i++) {
-            if (a[i] < min_val) {
-                min_val = a[i];
-                min_id = i;
+        point_t p = view2grid(n->pos.x, n->pos.y, view);
+        if(p.x == end_p.x && p.y == end_p.y)
+            break;
+        get_neighbours(n, &nodes[n_nodes]);
+
+        for(int i=0; i< NEIGHTBOURS_N; i++) {
+            node_t *nbr = &nodes[n_nodes++];
+
+            point_t n = view2grid(nbr->pos.x, nbr->pos.y, view);
+            int val = getgrid(grid, n.x, n.y);
+            if(val >= 0  && val < WALL) {
+                nbr->cost = float(abs(nbr->steer))/100*nav.steer_cost + points_dst(nbr->pos, e)/view.l*nav.dist_gain + val/100*nav.inflation_cost;
+                open.push(nbr);
             }
         }
-
-        switch (min_id) {
-            case 0: x += 1; y -= 1; break;
-            case 1: x += 1; y;      break;
-            case 2: x += 1; y += 1; break;
-            case 3: x -= 1; y -= 1; break;
-            case 4: x -= 1; y;      break;
-            case 5: x -= 1; y += 1; break;
-            case 6: x;      y -= 1; break;
-            case 7: x;      y += 1; break;
-        }
-
-        if(path.start == 0 && min_val <= stop_cost)
-            path.start = path.size;
-
-        path.data[path.size].x = x;
-        path.data[path.size].y = y;
-        path.size++;
-    }
-
-    if(iter >= MAX_ITER && xa != -1 && ya != -1) {
-        //recalc
-        xa = -1;
-        ya = -1;
-        ROS_WARN("GATE PATH INVALID, recalc with standard method");
-        //TODO: deal with stack overflow!!
-        return pathfinding(grid, xp, yp, xa, ya, stop_cost);
-    }
-
-    //expand path
-    for(int i=0; i<path.size; i++) {
-        int x = path.data[i].x;
-        int y = path.data[i].y;
         
-        if(!getgrid(grid, x+1, y) == EMPTY)
-            if(getgrid(grid, x-2, y) == EMPTY) 
-                path.data[i].x = x-1;
+    }
     
-        if(!getgrid(grid, x-1, y) == EMPTY)
-            if(getgrid(grid, x+2, y) == EMPTY) 
-                path.data[i].x = x+1;
-        
+    path_t path;
+    path.size = 0;
+
+    while(n != NULL) {
+        path.data[path.size++] = *n;
+        n = n->parent;
     }
 
-    //shortcuts path
-    for(int i=path.start; i<path.size; i++) {
-        int x = path.data[i].x;
-        int y = path.data[i].y;
-
-        if(grid_line_control(grid, xp, yp, x, y)) {
-            path.start = i;
-            break;
-        }
-    }
-
-    //printf("choosen p = %d - %d\n", n_p, path_l);
-    xa = path.data[path.start].x;
-    ya = path.data[path.start].y;
     return path;
 }

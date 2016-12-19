@@ -28,6 +28,10 @@ void reconf(dino_nav::DinonavConfig &config, uint32_t level) {
   nav.grid_dim = config.grid_dim;
   nav.zoom = config.zoom;
   nav.enable = config.enable;
+
+  nav.steer_cost = config.steer_cost;
+  nav.dist_gain = config.dist_gain;
+  nav.inflation_cost = config.inflation_cost;
 }
 
 
@@ -53,10 +57,10 @@ void discretize_laserscan(grid_t &grid, view_t &view, const sensor_msgs::LaserSc
         int grid_x = x / view.cell_l;
         int grid_y = y / view.cell_l;
         setgrid(grid, grid_x, grid_y, WALL);
-        inflate(grid, grid_x, grid_y, INFLATED, nav.inflation);
+        inflate(grid, grid_x, grid_y, nav.inflation, nav.inflation);
 
         if(i>0 && (last_x != grid_x || last_y != grid_y)) {
-            grid_line(grid, grid_x, grid_y, last_x, last_y, GATE);
+            grid_line(grid, grid_x, grid_y, last_x, last_y, WALL);
         }
         last_x = grid_x;
         last_y = grid_y;
@@ -105,18 +109,17 @@ void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
     inflate(grid, xp, yp, 0, 3);
     int to_x = -1, to_y = -1;
     choosegate(grid, xp, yp, to_x, to_y);
-    
-    path_t path = pathfinding(grid, xp, yp, to_x, to_y, nav.stop_cost);
 
-    //get x and y for start and goal from cells position
-    float_point_t part = grid2view(xp, yp, view);
-    float_point_t goal = grid2view(to_x, to_y, view);
+    float_point_t start, end;
+    start = grid2view(xp, yp, view);
+    end = grid2view(to_x, to_y, view);
+    
+    path_t path = pathfinding(grid, view, start, end);
 
     //compute angle for the steer
-    float ang  = points_angle(part.x, part.y, goal.x, goal.y);
+    float steer  = path.data[path.size-2].steer;
+    float throttle = nav.speed;
     
-    float throttle = 0;
-    float steer = 0;
     if(nav.enable) {
         race::drive_param m;
         /*
@@ -131,13 +134,8 @@ void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
         }
         */
 
-        m.velocity = nav.speed;
-        m.angle = ang;
-        if(m.angle >  100) m.angle=100;
-        if(m.angle < -100) m.angle=-100;
-
-        throttle  = m.velocity;
-        steer = m.angle;
+        m.velocity = throttle;
+        m.angle = steer;
         drive_pub.publish(m);
     }
 
@@ -152,8 +150,8 @@ void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
     stat.path_start = path.start;
     for(int i=0; i<path.size; i++) {     
         dino_nav::Point point;
-        point.x = path.data[i].x;
-        point.y = path.data[i].y;
+        point.x = path.data[i].pos.x;
+        point.y = path.data[i].pos.y;
 
         stat.path.push_back(point);
     }
