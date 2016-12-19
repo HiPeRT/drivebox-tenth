@@ -106,7 +106,7 @@ void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
     int to_x = -1, to_y = -1;
     choosegate(grid, xp, yp, to_x, to_y);
     
-    path_t path = pathfinding(grid, xp, yp, to_x, to_y, nav.stop_cost);
+    path_t path = pathfinding(grid, view, car, xp, yp, to_x, to_y, nav.stop_cost);
 
     //get x and y for start and goal from cells position
     float_point_t part = grid2view(xp, yp, view);

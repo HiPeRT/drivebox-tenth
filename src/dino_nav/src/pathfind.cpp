@@ -74,7 +74,7 @@ void init_path(path_t &path) {
     path.start = 0;
 }
 
-path_t pathfinding(grid_t &grid, int xp, int yp, int &xa, int &ya, int stop_cost)
+path_t pathfinding(grid_t &grid, view_t &view, car_t &car, int xp, int yp, int &xa, int &ya, int stop_cost)
 {
     //path to calc
     path_t path;
@@ -176,23 +176,58 @@ path_t pathfinding(grid_t &grid, int xp, int yp, int &xa, int &ya, int stop_cost
         ya = -1;
         ROS_WARN("GATE PATH INVALID, recalc with standard method");
         //TODO: deal with stack overflow!!
-        return pathfinding(grid, xp, yp, xa, ya, stop_cost);
+        return pathfinding(grid, view, car, xp, yp, xa, ya, stop_cost);
     }
 
     //expand path
-    for(int i=0; i<path.size; i++) {
-        int x = path.data[i].x;
-        int y = path.data[i].y;
+    for(int i=path.size-1; i>=1; i--) {
+        point_t p, p1;
+        p.x = path.data[i].x;
+        p.y = path.data[i].y;
+        p1.x = path.data[i-1].x;
+        p1.y = path.data[i-1].y;
+
+        int v = i - (path.size - path.start);
+        if(v < 0) v=0;
+        float_point_t goal = grid2view(path.data[v].x, path.data[v].y, view);
+
+        //al_draw_filled_rectangle(view.x + view.cell_l * p.x, view.y + view.cell_l * p.y, view.x + view.cell_l * (p.x + 1),
+        //                         view.y + view.cell_l * (p.y + 1), PATH_GRID_COLOR);
+                       
+        float_point_t fp = grid2view(p.x, p.y, view);
+        float_point_t fp1 = grid2view(p1.x, p1.y, view);
+        float ang  = points_angle_rad(fp.x, fp.y, fp1.x, fp1.y) - M_PI;
+
+        //al_draw_line(fp.x, fp.y, goal.x, goal.y, PATH_COLOR, 1);
         
-        if(!getgrid(grid, x+1, y) == EMPTY)
-            if(getgrid(grid, x-2, y) == EMPTY) 
-                path.data[i].x = x-1;
-    
-        if(!getgrid(grid, x-1, y) == EMPTY)
-            if(getgrid(grid, x+2, y) == EMPTY) 
-                path.data[i].x = x+1;
         
+        float cw = car.width;
+
+        int lv, rv;
+        float_point_t left, right;
+        for(int j=0; j<cw/view.cell_l; j++) {
+            left.x  = fp.x + cos(ang + M_PI/2)*cw;   left.y  = fp.y + sin(ang + M_PI/2)*cw;
+            right.x = fp.x + cos(ang - M_PI/2)*cw;   right.y = fp.y + sin(ang - M_PI/2)*cw;
+        
+            point_t lg = view2grid(left.x, left.y, view);
+            point_t rg = view2grid(right.x, right.y, view);
+            lv = getgrid(grid, lg.x, lg.y);
+            rv = getgrid(grid, rg.x, rg.y);
+
+            if(lv != EMPTY && rv == EMPTY) {
+                fp.x += cos(ang - M_PI/2)*view.cell_l;
+                fp.y += sin(ang - M_PI/2)*view.cell_l;
+            
+            } else if (lv == EMPTY && rv != EMPTY) {
+                fp.x += cos(ang + M_PI/2)*view.cell_l;
+                fp.y += sin(ang + M_PI/2)*view.cell_l; 
+            
+            } 
+        }
+
+        path.data[i] = view2grid(fp.x, fp.y, view);
     }
+
 
     //shortcuts path
     for(int i=path.start; i<path.size; i++) {

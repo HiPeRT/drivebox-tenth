@@ -21,6 +21,6 @@ struct path_t {
     int start;
 };
 
-path_t pathfinding(grid_t &grid, int xp, int yp, int &xa, int &ya, int stop_cost);
+path_t pathfinding(grid_t &grid, view_t &view, car_t &car, int xp, int yp, int &xa, int &ya, int stop_cost);
 
 #endif //PATHFIND_H
