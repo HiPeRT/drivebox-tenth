@@ -205,30 +205,15 @@ void map_recv(const dino_nav::Stat::ConstPtr& msg) {
                         view.x + view.cell_l/2 + view.l/2 + car.width/2, view.y + view.l - car.length, 
                         CAR_COLOR,1);
 
-    float t = 0;
-    bool t_ok = false;
-    int look_ahead = msg->path_size - msg->path_start;
+
+    float max_cost = get_max_value(&msg->path_cost[0], msg->path_size);
     for(int i=msg->path_size-1; i>=1; i--) {
         float_point_t fp = grid2view(msg->path[i].x, msg->path[i].y, view);
+        float cost = msg->path_cost[i];
 
-        al_draw_circle(fp.x, fp.y, 2, PATH_COLOR, 1);
-          
-        int next_i = i - look_ahead;
-        if(next_i <0) next_i = 0;
-        float_point_t next = grid2view(msg->path[next_i].x, msg->path[next_i].y, view);
-
-        float a = fabs(points_angle(fp.x, fp.y, next.x, next.y))/100.0f;
-        al_draw_line(fp.x, fp.y, next.x, next.y, al_map_rgb_f(a, 1-a, 0), 1);
-        //al_draw_textf(font,PATH_COLOR, fp.x, fp.y, 0, "%.2f",  points_angle(fp.x, fp.y, next.x, next.y));
-        
-        if(a <10 && !t_ok) {
-            t +=1;
-        } 
-        if(a >10 && !t_ok) {
-            t_ok = true;
-        }
+        float v = cost/max_cost;
+        al_draw_circle(fp.x, fp.y, 2, RGBA(v, 1-v, 0, 1.0), 1);
     }                    
-    al_draw_textf(font, VIEW_COLOR, view.x, view.y + view.l, 0, "%f", t);
 
     if(msg->path_start > 0) {
         int x = msg->path[msg->path_start].x, y = msg->path[msg->path_start].y;

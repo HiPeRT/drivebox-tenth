@@ -10,6 +10,7 @@ pkg_search_module(ALLEGRO_TTF allegro_ttf-5.0)
 
 add_message_files(
    FILES
+   FloatPoint.msg
    Point.msg
    Stat.msg
 )

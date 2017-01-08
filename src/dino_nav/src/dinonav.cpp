@@ -78,6 +78,38 @@ void init_car(car_t &car, view_t &view, float zoom) {
     car.width  = (10.0f/zoom)*mul;
 }
 
+void calc_path_cost(float *path_cost, path_t &path) {
+
+    float_point_t fpath[MAX_ITER];    
+    for(int i=0; i<path.size; i++) {
+        fpath[i].x = path.data[i].x;
+        fpath[i].y = path.data[i].y;
+
+        path_cost[i] = 0;
+    }
+     
+    int look_ahead = path.size - path.start;
+    int break_anticipe = look_ahead/2;
+
+    for(int i=path.size-1; i>=0; i--) { 
+        float_point_t fp = fpath[i];
+
+        float dx = fp.x - path.data[i].x;
+        float dy = fp.y - path.data[i].y;
+        if(i + break_anticipe < path.size)
+            path_cost[i + break_anticipe] = sqrt(dx*dx + dy*dy); 
+            
+        int next_i = i - look_ahead;
+        if(next_i <0) next_i = 0;
+        float_point_t next = fpath[next_i];
+
+        float a = points_angle_rad(fp.x, fp.y, next.x, next.y);
+        for(int j=i-1; j>next_i; j--) {
+            rotate_point(fpath[j], fp, a - points_angle_rad(fp.x, fp.y, fpath[j].x, fpath[j].y));
+        }
+    }
+}
+
 /**
     laserscan callback
 */
@@ -108,36 +140,58 @@ void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
     
     path_t path = pathfinding(grid, view, car, xp, yp, to_x, to_y, nav.stop_cost);
 
+    float path_cost[MAX_ITER];
+    calc_path_cost(path_cost, path);
+
+    float_point_t break_point = grid2view(to_x, to_y, view);
+    for(int i = path.size-1; i>=0; i--) {
+        float cost = path_cost[i];
+        if(cost > 2){
+            break_point = grid2view(path.data[i].x, path.data[i].y, view);
+            break;
+        }
+    } 
+
     //get x and y for start and goal from cells position
     float_point_t part = grid2view(xp, yp, view);
     float_point_t goal = grid2view(to_x, to_y, view);
 
     //compute angle for the steer
+    static float precedent_steer = 0;
     float ang  = points_angle(part.x, part.y, goal.x, goal.y);
-    
-    float throttle = 0;
-    float steer = 0;
+    if(ang >  100) ang=100;
+    if(ang < -100) ang=-100;
+    float steer = precedent_steer -  (precedent_steer -ang)/2;
+
+    //get break point distance
+    float break_point_dst = point_dst(part, break_point);
+    float car_break_dst = car.length *estimated_speed;
+    float min_speed = 1.5 + (break_point_dst - car_break_dst)/(car_break_dst*4); 
+    if(min_speed < 1.5)
+        min_speed = 1.5;
+
+    printf("min_speed %f  \tbreak_point_dst %f\t car_break %f\n", min_speed, break_point_dst, car_break_dst);
+
+    static float precedent_throttle = 0;
+    float delta_speed = min_speed-estimated_speed;
+    float throttle = precedent_throttle;
+    if(delta_speed > 0)
+        throttle = precedent_throttle + delta_speed*delta_speed;
+    if(delta_speed < -0.5)
+        throttle = precedent_throttle + delta_speed*estimated_speed*2;
+    if(precedent_throttle < 0 && delta_speed > 0)
+        throttle = 0;
+
+    if(throttle > 100) throttle = 100;
+    if(throttle < -100) throttle = -100;
+    precedent_throttle = throttle;
+
+
     if(nav.enable) {
         race::drive_param m;
-        /*
-        if(fabs(ang2 - ang) > 30 && estimated_speed > 1.5) {
-            m.velocity = -10;
-            printf("BREAK!!!\n");
-        } else {
-	    if(fabs(ang2 - ang) < 10 && estimated_speed < 3)
-        	m.velocity = nav.speed*2;
-	    else
-		m.velocity = nav.speed;
-        }
-        */
 
-        m.velocity = nav.speed;
-        m.angle = ang;
-        if(m.angle >  100) m.angle=100;
-        if(m.angle < -100) m.angle=-100;
-
-        throttle  = m.velocity;
-        steer = m.angle;
+        m.velocity = throttle;
+        m.angle = steer;
         drive_pub.publish(m);
     }
 
@@ -156,6 +210,7 @@ void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
         point.y = path.data[i].y;
 
         stat.path.push_back(point);
+        stat.path_cost.push_back(path_cost[i]);
     }
     stat.throttle = throttle;
     stat.steer = steer;
