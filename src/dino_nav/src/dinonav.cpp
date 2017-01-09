@@ -139,22 +139,23 @@ void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
     choosegate(grid, xp, yp, to_x, to_y);
     
     path_t path = pathfinding(grid, view, car, xp, yp, to_x, to_y, nav.stop_cost);
+    //get x and y for start and goal from cells position
+    float_point_t part = grid2view(xp, yp, view);
+    float_point_t goal = grid2view(to_x, to_y, view);
 
     float path_cost[MAX_ITER];
     calc_path_cost(path_cost, path);
 
     float_point_t break_point = grid2view(to_x, to_y, view);
+    float break_point_dst = point_dst(part, break_point);
     for(int i = path.size-1; i>=0; i--) {
         float cost = path_cost[i];
         if(cost > 2){
             break_point = grid2view(path.data[i].x, path.data[i].y, view);
+            break_point_dst = point_dst(part, break_point);// - path_cost[i];
             break;
         }
     } 
-
-    //get x and y for start and goal from cells position
-    float_point_t part = grid2view(xp, yp, view);
-    float_point_t goal = grid2view(to_x, to_y, view);
 
     //compute angle for the steer
     static float precedent_steer = 0;
@@ -164,11 +165,12 @@ void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
     float steer = precedent_steer -  (precedent_steer -ang)/2;
 
     //get break point distance
-    float break_point_dst = point_dst(part, break_point);
-    float car_break_dst = car.length *estimated_speed;
-    float min_speed = 1.5 + (break_point_dst - car_break_dst)/(car_break_dst*4); 
+    float car_break_dst = car.length *estimated_speed*1.2;
+    float min_speed = 1.5 + (break_point_dst - car_break_dst)/(car_break_dst); 
     if(min_speed < 1.5)
         min_speed = 1.5;
+    if(fabs(steer) > 80)
+        min_speed = 1;
 
     printf("min_speed %f  \tbreak_point_dst %f\t car_break %f\n", min_speed, break_point_dst, car_break_dst);
 
@@ -178,7 +180,7 @@ void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
     if(delta_speed > 0)
         throttle = precedent_throttle + delta_speed*delta_speed;
     if(delta_speed < -0.5)
-        throttle = precedent_throttle + delta_speed*estimated_speed*2;
+        throttle = precedent_throttle + delta_speed*estimated_speed*10;
     if(precedent_throttle < 0 && delta_speed > 0)
         throttle = 0;
 
