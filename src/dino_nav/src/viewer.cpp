@@ -22,6 +22,9 @@
 ALLEGRO_DISPLAY *display = NULL;
 ALLEGRO_FONT *font;
 ALLEGRO_BITMAP *path_bmp = NULL;
+ALLEGRO_BITMAP *view_bmp = NULL;
+
+ALLEGRO_MOUSE_STATE mouse;
 
 
 void draw_rotated_rectangle(float_point_t o, float w, float h, float angle, ALLEGRO_COLOR col) {
@@ -121,8 +124,12 @@ void draw_pose(view_t &view, geometry_msgs::Pose pose) {
     v.y = view.y;
     v.l = view.l;
 
-    if(path_bmp == NULL)
+    if(path_bmp == NULL) {
         path_bmp = al_create_bitmap(v.l, v.l);
+        al_set_target_bitmap(path_bmp);
+            al_clear_to_color(al_map_rgb(0,0,0));
+        al_set_target_bitmap(al_get_backbuffer(display));
+    }
     float x = pose.position.x*10;
     float y = pose.position.y*10;
 
@@ -130,7 +137,6 @@ void draw_pose(view_t &view, geometry_msgs::Pose pose) {
     float v_starty = v.y + v.l/2;
     float v_px = v_startx + x;
     float v_py = v_starty + y;
-    al_draw_rectangle(v.x, v.y, v.x + v.l, v.y + v.l, VIEW_COLOR, 1);
 
     al_set_target_bitmap(path_bmp);
         al_put_pixel(v.l/2 +x, v.l/2 +y, PATH_COLOR);
@@ -146,6 +152,39 @@ void draw_pose(view_t &view, geometry_msgs::Pose pose) {
     tf::Matrix3x3(q).getRPY(roll, pitch, yaw);
     al_draw_line(v_px, v_py, v_px+cos(yaw)*10, v_py+sin(yaw)*10, VIEW_COLOR, 1);
     al_draw_textf(font, VIEW_COLOR, v.x, v.y + v.l +5, 0, "yaw: %.3f", yaw);
+
+    float_point_t L, R, L2, R2;
+    float l = 60;
+    L.x = v_px + cos(yaw - M_PI/2)*l/2;
+    L.y = v_py + sin(yaw - M_PI/2)*l/2;
+    R.x = v_px + cos(yaw + M_PI/2)*l/2;
+    R.y = v_py + sin(yaw + M_PI/2)*l/2;
+    L2.x = L.x + cos(yaw)*l;
+    L2.y = L.y + sin(yaw)*l;
+    R2.x = R.x + cos(yaw)*l;
+    R2.y = R.y + sin(yaw)*l;
+
+    float scale = l / v.l;
+    al_draw_scaled_rotated_bitmap(
+        view_bmp, v.l/2, v.l, v_px, v_py, scale, scale, yaw + M_PI/2, 0);
+
+    al_draw_line(v_px, v_py, L.x, L.y, VIEW_COLOR, 1);
+    al_draw_line(v_px, v_py, R.x, R.y, VIEW_COLOR, 1);
+    al_draw_line(L.x, L.y, L2.x, L2.y, VIEW_COLOR, 1);
+    al_draw_line(R.x, R.y, R2.x, R2.y, VIEW_COLOR, 1);
+    al_draw_line(L2.x, L2.y, R2.x, R2.y, VIEW_COLOR, 1);
+    al_draw_rectangle(v.x, v.y, v.x + v.l, v.y + v.l, VIEW_COLOR, 1);
+
+    
+    float m_o = (yaw + M_PI/2);
+    float q_o = v_py - m_o*v_px; 
+    float dst_o = (mouse.y - (m_o*mouse.x +q_o)) / sqrt(1 + m_o*m_o);
+    
+    float m_v = yaw;
+    float q_v = v_py - m_v*v_px; 
+    float dst_v = (mouse.y - (m_v*mouse.x +q_v)) / sqrt(1 + m_v*m_v);
+    al_draw_circle(view.x + view.l/2 + dst_v/l*view.l, view.y + view.l + dst_o/l*view.l, 2, VIEW_COLOR, 1);
+
 }
 
 void map_recv(const dino_nav::Stat::ConstPtr& msg) {
@@ -167,14 +206,15 @@ void map_recv(const dino_nav::Stat::ConstPtr& msg) {
     view.cell_l = view.l / float(grid_dim);
 
     for(int i=0; i<grid_dim; i++) {
-        al_draw_line(view.x + i * view.cell_l, view.y, view.x + i * view.cell_l, view.y + view.l, VIEW_GRID_COLOR, 1);
-        al_draw_line(view.x, view.y + i * view.cell_l, view.x + view.l, view.y + i * view.cell_l, VIEW_GRID_COLOR, 1);
-
         for (int j = 0; j < grid_dim; j++)
             grid.data[i*grid_dim +j] = msg->grid[i*grid_dim + j];
     }
 
-    al_draw_rectangle(view.x, view.y, view.x + view.l, view.y + view.l, VIEW_COLOR, 1);
+    if(view_bmp == NULL) {
+        view_bmp = al_create_bitmap(view.l, view.l);
+    }
+    al_set_target_bitmap(view_bmp);
+    al_clear_to_color(al_map_rgba(0,0,0,0));
 
     for(int i=0; i<grid_dim; i++) {
         for (int j = 0; j < grid_dim; j++) {
@@ -191,10 +231,17 @@ void map_recv(const dino_nav::Stat::ConstPtr& msg) {
                 continue;
             }
 
-            al_draw_filled_rectangle(   view.x + view.cell_l * j, view.y + view.cell_l * i, view.x + view.cell_l * (j + 1),
-                                        view.y + view.cell_l * (i + 1), col);
+            al_draw_filled_rectangle(   view.cell_l * j, view.cell_l * i, view.cell_l * (j + 1),
+                                        view.cell_l * (i + 1), col);
         }
     }
+    al_set_target_bitmap(al_get_backbuffer(display));
+    al_draw_bitmap(view_bmp, view.x, view.y, 0);
+    for(int i=0; i<grid_dim; i++) {
+        al_draw_line(view.x + i * view.cell_l, view.y, view.x + i * view.cell_l, view.y + view.l, VIEW_GRID_COLOR, 1);
+        al_draw_line(view.x, view.y + i * view.cell_l, view.x + view.l, view.y + i * view.cell_l, VIEW_GRID_COLOR, 1);
+    }
+    al_draw_rectangle(view.x, view.y, view.x + view.l, view.y + view.l, VIEW_COLOR, 1);
 
     car_t car;
     init_car(car, view, msg->zoom);
@@ -231,6 +278,7 @@ void map_recv(const dino_nav::Stat::ConstPtr& msg) {
 
     draw_pose(view, msg->pose);
 
+    al_draw_circle(mouse.x, mouse.y, 2, VIEW_COLOR, 1);
     al_flip_display();
 }
 
@@ -256,6 +304,7 @@ int main(int argc, char **argv) {
     }
 
     al_install_keyboard();
+    al_install_mouse();
 
     al_init_primitives_addon();
     al_init_font_addon(); // initialize the font addon
@@ -293,6 +342,8 @@ int main(int argc, char **argv) {
 
         if(redraw && al_event_queue_is_empty(event_queue)) {
             redraw = false;
+            al_get_mouse_state(&mouse);
+
             ros::spinOnce();
         }
     }

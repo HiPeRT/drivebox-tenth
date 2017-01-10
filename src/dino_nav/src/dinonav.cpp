@@ -173,6 +173,7 @@ void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
         min_speed = 1.5;
     if(fabs(steer) > 80)
         min_speed = 1;
+    min_speed = 1;
 
     printf("min_speed %f  \tbreak_point_dst %f\t car_break %f\n", min_speed, break_point_dst, car_break_dst);
 
