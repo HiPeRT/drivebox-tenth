@@ -28,7 +28,7 @@ float points_angle(float x_part, float y_part, float x_goal, float y_goal) {
  float get_max_value(const float *a, int dim) {
     float max = a[0];
     for(int i=1; i<dim; i++)
-        if(a[i] > max) max++;
+        if(a[i] > max) max = a[i];
     return max;
  }
 

@@ -89,24 +89,26 @@ void calc_path_cost(float *path_cost, path_t &path) {
     }
      
     int look_ahead = path.size - path.start;
-    int break_anticipe = look_ahead/2;
 
+    float prev_ang = 0;
     for(int i=path.size-1; i>=0; i--) { 
         float_point_t fp = fpath[i];
-
-        float dx = fp.x - path.data[i].x;
-        float dy = fp.y - path.data[i].y;
-        if(i + break_anticipe < path.size)
-            path_cost[i + break_anticipe] = sqrt(dx*dx + dy*dy); 
             
         int next_i = i - look_ahead;
         if(next_i <0) next_i = 0;
         float_point_t next = fpath[next_i];
 
+        float sangle_g = prev_ang*180/M_PI/45*100;
+        float ang = points_angle(fp.x, fp.y, next.x, next.y) - sangle_g;
+        if(ang > 100) ang = 100;
+        if(ang < -100)ang = -100;
+        path_cost[i] = int(fabs(ang));
+
         float a = points_angle_rad(fp.x, fp.y, next.x, next.y);
         for(int j=i-1; j>next_i; j--) {
             rotate_point(fpath[j], fp, a - points_angle_rad(fp.x, fp.y, fpath[j].x, fpath[j].y));
         }
+        prev_ang = (a + M_PI/2);
     }
 }
 

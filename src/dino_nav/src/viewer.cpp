@@ -206,13 +206,17 @@ void map_recv(const dino_nav::Stat::ConstPtr& msg) {
                         CAR_COLOR,1);
 
 
-    float max_cost = get_max_value(&msg->path_cost[0], msg->path_size);
+    float max_cost = get_max_value(&msg->path_cost[1], msg->path_size-1);
     for(int i=msg->path_size-1; i>=1; i--) {
         float_point_t fp = grid2view(msg->path[i].x, msg->path[i].y, view);
         float cost = msg->path_cost[i];
 
-        float v = cost/max_cost;
-        al_draw_circle(fp.x, fp.y, 2, RGBA(v, 1-v, 0, 1.0), 1);
+        if(cost >0) {
+            float v = cost/max_cost;
+            al_draw_circle(fp.x, fp.y, 2, RGBA(1.0f, 1-v, 0, 1.0), 1);
+        } else {
+            al_draw_circle(fp.x, fp.y, 2, RGBA(0, 1.0f, 0, 1.0f), 1);
+        }
     }                    
 
     if(msg->path_start > 0) {
