@@ -5,6 +5,7 @@
 #include "grid.h"
 #include "pathfind.h"
 #include "common.h"
+#include "viz.h"
 
 #include "dinonav.h"
 
@@ -144,6 +145,8 @@ void calc_path_cost(float *path_cost, path_t &path) {
     laserscan callback
 */
 void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
+    viz_clear();
+
     //ROS_INFO("Scan recived: [%f]", msg->scan_time);
     PTIME_INIT()
     PTIME_START()
@@ -159,6 +162,27 @@ void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
     init_grid(grid, nav.grid_dim);
 
     discretize_laserscan(grid, view, msg);
+
+    for(int i=0; i<grid.size; i++) { 
+        for(int j=0; j<grid.size; j++) {
+            int val = grid.data[i*grid.size +j];
+            ALLEGRO_COLOR col;
+
+            if (val == WALL) {
+                col = WALL_COLOR;
+            } else if(val == INFLATED) {
+                col = INFLATED_COLOR;  
+            } else if(val == GATE) {
+                col = GATE_COLOR;  
+            } else {
+                continue;
+            }
+            float_point_t p;
+            p.x = view.x + j*view.cell_l;
+            p.y = view.y + i*view.cell_l;
+            viz_rect(p, view.cell_l, view.cell_l, col, 0);
+        }
+    }
 
     car_t car;
     init_car(car, view, nav.zoom);
@@ -283,6 +307,8 @@ void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
 
     PTIME_END()
     PTIME_STAMP(,DINONAV)
+
+    viz_flip();
 }
 
 

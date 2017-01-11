@@ -1,4 +1,5 @@
 #include "ros/ros.h"
+#include "viz.h"
 #include "dinonav.h"
 
 #include "race/drive_param.h"
@@ -27,7 +28,12 @@ int main(int argc, char **argv) {
     f = boost::bind(&reconf, _1, _2);
     server.setCallback(f);
 
-    ros::spin();
+    viz_init();
 
+    while(viz_update()) {
+        ros::spinOnce();
+    }
+
+    viz_destroy();
     return 0;
 }
