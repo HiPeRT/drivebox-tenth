@@ -175,7 +175,7 @@ void draw_pose(view_t &view, geometry_msgs::Pose pose) {
     al_draw_line(L2.x, L2.y, R2.x, R2.y, VIEW_COLOR, 1);
     al_draw_rectangle(v.x, v.y, v.x + v.l, v.y + v.l, VIEW_COLOR, 1);
 
-    
+    /*
     float m_o = (yaw + M_PI/2);
     float q_o = v_py - m_o*v_px; 
     float dst_o = (mouse.y - (m_o*mouse.x +q_o)) / sqrt(1 + m_o*m_o);
@@ -184,7 +184,7 @@ void draw_pose(view_t &view, geometry_msgs::Pose pose) {
     float q_v = v_py - m_v*v_px; 
     float dst_v = (mouse.y - (m_v*mouse.x +q_v)) / sqrt(1 + m_v*m_v);
     al_draw_circle(view.x + view.l/2 + dst_v/l*view.l, view.y + view.l + dst_o/l*view.l, 2, VIEW_COLOR, 1);
-
+    */
 }
 
 void map_recv(const dino_nav::Stat::ConstPtr& msg) {

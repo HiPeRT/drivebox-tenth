@@ -12,13 +12,41 @@
 #include "race/drive_param.h"
 #include "std_msgs/Float32.h"
 
+/////////////////////////////////////////
+/* 
+    CAR VALUES
+
+    every line is an angle from 0 to 100 
+
+    | steer | throttle  | speed |
+    1. steer to use 
+    2. throttle to use
+    3. speed to be
+*/
+float car_values[11][3] = {
+
+    { 0,    100,    5.0  }, // 0
+    { 60,   100,    2.0  }, // 10
+    { 60,    80,    1.5  }, // 20
+    { 60,    70,    1.5  }, // 30
+    { 100,   80,    1.5  }, // 40
+    { 100,   75,    1.3  }, // 50
+    { 100,   70,    1.0  }, // 60
+    { 100,   65,    1.0  }, // 70
+    { 100,   60,    1.0  }, // 80
+    {  90,   55,    1.0  }, // 90
+    { 100,   50,    1.0  } // 100
+};
+/////////////////////////////////////////
+
+
+
 ros::Publisher drive_pub, stat_pub;
 
 dinonav_t nav;
 
 geometry_msgs::Pose pose;
 float estimated_speed;
-
 
 void reconf(dino_nav::DinonavConfig &config, uint32_t level) {
   ROS_INFO("Reconfigure Request");
@@ -148,49 +176,79 @@ void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
     float path_cost[MAX_ITER];
     calc_path_cost(path_cost, path);
 
+    float car_break_dst = car.length *estimated_speed*2;
     float_point_t break_point = grid2view(to_x, to_y, view);
-    float break_point_dst = point_dst(part, break_point);
+    float break_point_dst = 10000;
+    float break_point_cost = 0;
     for(int i = path.size-1; i>=0; i--) {
         float cost = path_cost[i];
-        if(cost > 2){
+        if(cost > 2 && break_point_dst > 9999){
             break_point = grid2view(path.data[i].x, path.data[i].y, view);
-            break_point_dst = point_dst(part, break_point);// - path_cost[i];
+            break_point_dst = point_dst(part, break_point);
+            break_point_cost = cost;
+
+            int end = i - 28;
+            if(end <0) end = 0;
+            for(i=i-1; i>=end; i--) 
+                if(path_cost[i] > cost) break_point_cost = path_cost[i];
+
             break;
-        }
+        } 
     } 
+    printf("cost: %f ", break_point_cost);
 
     //compute angle for the steer
     static float precedent_steer = 0;
     float ang  = points_angle(part.x, part.y, goal.x, goal.y);
     if(ang >  100) ang=100;
     if(ang < -100) ang=-100;
-    float steer = precedent_steer -  (precedent_steer -ang)/2;
 
     //get break point distance
-    float car_break_dst = car.length *estimated_speed*1.2;
-    float min_speed = 1.5 + (break_point_dst - car_break_dst)/(car_break_dst); 
-    if(min_speed < 1.5)
-        min_speed = 1.5;
-    if(fabs(steer) > 80)
-        min_speed = 1;
-    min_speed = 1;
-
-    printf("min_speed %f  \tbreak_point_dst %f\t car_break %f\n", min_speed, break_point_dst, car_break_dst);
-
     static float precedent_throttle = 0;
-    float delta_speed = min_speed-estimated_speed;
-    float throttle = precedent_throttle;
-    if(delta_speed > 0)
-        throttle = precedent_throttle + delta_speed*delta_speed;
-    if(delta_speed < -0.5)
-        throttle = precedent_throttle + delta_speed*estimated_speed*10;
-    if(precedent_throttle < 0 && delta_speed > 0)
-        throttle = 0;
+    float throttle = 0;
+    if(fabs(ang) > 2) {
+        int a = fabs(ang)/10;
+        if(a==0) a = 1;
 
+        float delta = estimated_speed - car_values[a][2];
+        if(delta < 0) {
+            throttle = car_values[a][1];
+            if(break_point_cost < car_break_dst && break_point_cost > fabs(ang)) {
+                int a = fabs(break_point_cost)/10;
+                if(a==0) a = 1;
+                float delta = estimated_speed - car_values[a][2];
+                if(delta >0)
+                    throttle = - delta*20;
+            } else {
+                ang = car_values[a][0] *ang/fabs(ang);
+            }
+            printf("apply racing values s: %f t: %f\n", ang, throttle);
+        } else {
+                throttle = -delta*20;
+            printf("to much speed for s: %f, using t: %f\n", ang, throttle);
+        }
+        
+    } else {
+        if(break_point_dst > car_break_dst ) {
+            printf("open max throttle\n");
+            throttle = precedent_throttle + 5;
+        } else {
+            int a = fabs(break_point_cost)/10;
+            if(a==0) a= 1;
+            float delta = estimated_speed - car_values[a][2];
+            
+            printf("must break to: %f\n", car_values[a][2]);
+            if(precedent_throttle >0) precedent_throttle = 0;
+            throttle = precedent_throttle - delta;
+        }
+    }
     if(throttle > 100) throttle = 100;
     if(throttle < -100) throttle = -100;
     precedent_throttle = throttle;
 
+    float steer = precedent_steer -  (precedent_steer -ang)/2;
+    if(steer > 100)  steer = 100;
+    if(steer < -100) steer = -100;
 
     if(nav.enable) {
         race::drive_param m;
