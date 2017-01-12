@@ -89,8 +89,6 @@ void discretize_laserscan(grid_t &grid, view_t &view, const sensor_msgs::LaserSc
         }
         last_x = grid_x;
         last_y = grid_y;
-
-
         angle -= msg->angle_increment;
     }
 }
@@ -163,6 +161,8 @@ void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
 
     discretize_laserscan(grid, view, msg);
 
+    float_point_t p; p.x = view.x; p.y = view.y;
+    viz_rect(p, view.l, view.l, VIEW_COLOR, 1);
     for(int i=0; i<grid.size; i++) { 
         for(int j=0; j<grid.size; j++) {
             int val = grid.data[i*grid.size +j];

@@ -85,6 +85,17 @@ void viz_rect(float_point_t o, float w, float h, ALLEGRO_COLOR col, float thick)
         al_draw_rectangle(o.x, o.y, o.x + w, o.y + h, col, thick);
 }
 
+void viz_circle(float_point_t p, float r, ALLEGRO_COLOR col, float thick) {
+    if(thick <= 0)
+        al_draw_filled_circle(p.x, p.y, r, col);
+    else
+        al_draw_circle(p.x, p.y, r, col, 1);
+}
+
+void viz_line(float_point_t a, float_point_t b, ALLEGRO_COLOR col, float thick) {
+    al_draw_line(a.x, a.y, b.x, b.y, col, thick);
+}
+
 void viz_clear() {
     al_clear_to_color(al_map_rgb(0,0,0));
 }

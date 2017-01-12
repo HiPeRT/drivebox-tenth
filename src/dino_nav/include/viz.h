@@ -22,6 +22,8 @@ void viz_flip();
 void viz_clear();
 
 void viz_rect(float_point_t o, float w, float h, ALLEGRO_COLOR col, float thick);
+void viz_circle(float_point_t p, float r, ALLEGRO_COLOR col, float thick);
+void viz_line(float_point_t a, float_point_t b, ALLEGRO_COLOR col, float thick);
 
 #endif //VIZ_H
 
