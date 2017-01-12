@@ -62,8 +62,6 @@ void reconf(dino_nav::DinonavConfig &config, uint32_t level) {
 
 void discretize_laserscan(grid_t &grid, view_t &view, const sensor_msgs::LaserScan::ConstPtr& msg) {
 
-    int last_x, last_y;
-
     float maxd = nav.zoom;
     int quad_l = maxd*2;
     int size = msg->ranges.size();
@@ -81,15 +79,25 @@ void discretize_laserscan(grid_t &grid, view_t &view, const sensor_msgs::LaserSc
         //coordinates of the corrispondent cell
         int grid_x = x / view.cell_l;
         int grid_y = y / view.cell_l;
-        setgrid(grid, grid_x, grid_y, WALL);
+        if(setgrid(grid, grid_x, grid_y, WALL)) {
+            grid.points[grid.points_n].x = grid_x;
+            grid.points[grid.points_n].y = grid_y;
+            grid.points_n++;
+        }
         inflate(grid, grid_x, grid_y, INFLATED, nav.inflation);
 
-        if(i>0 && (last_x != grid_x || last_y != grid_y)) {
-            grid_line(grid, grid_x, grid_y, last_x, last_y, GATE);
-        }
-        last_x = grid_x;
-        last_y = grid_y;
+        //if(i>0 && (last_x != grid_x || last_y != grid_y)) {
+        //    grid_line(grid, grid_x, grid_y, last_x, last_y, GATE);
+        //}
         angle -= msg->angle_increment;
+    }
+
+    for(int i=1; i<grid.points_n; i++) {
+        point_t p = grid.points[i];
+        point_t prev = grid.points[i-1];
+        if(prev.x != p.x || prev.y != p.y) {
+            grid_line(grid, p.x, p.y, prev.x, prev.y, GATE);
+        }
     }
 }
 
@@ -190,7 +198,14 @@ void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
     int xp = grid.size/2, yp = grid.size - (car.length/10*8)/view.cell_l;
     inflate(grid, xp, yp, 0, 3);
     int to_x = -1, to_y = -1;
-    choosegate(grid, xp, yp, to_x, to_y);
+    int gate_idx = choosegate(grid, xp, yp);
+    point_t s = grid.gates[gate_idx].s;
+    point_t e = grid.gates[gate_idx].e;
+    viz_line(grid2view(s.x, s.y, view), grid2view(e.x, e.y, view), VIEW_COLOR, 2);
+
+
+    to_x = (s.x + e.x)/2;
+    to_y = (s.y + e.y)/2; 
     
     path_t path = pathfinding(grid, view, car, xp, yp, to_x, to_y, nav.stop_cost);
     //get x and y for start and goal from cells position
@@ -277,7 +292,7 @@ void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
     if(nav.enable) {
         race::drive_param m;
 
-        m.velocity = throttle;
+        m.velocity = 10;
         m.angle = steer;
         drive_pub.publish(m);
     }
