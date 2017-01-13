@@ -2,6 +2,8 @@
 #include <math.h>
 
 #include "ros/ros.h"
+#include "tf/LinearMath/Quaternion.h"
+#include "tf/LinearMath/Matrix3x3.h"
 #include "grid.h"
 #include "pathfind.h"
 #include "common.h"
@@ -48,6 +50,7 @@ dinonav_t nav;
 
 geometry_msgs::Pose pose;
 float estimated_speed;
+double yaw = 0;
 
 void reconf(dino_nav::DinonavConfig &config, uint32_t level) {
   ROS_INFO("Reconfigure Request");
@@ -80,9 +83,16 @@ void discretize_laserscan(grid_t &grid, view_t &view, const sensor_msgs::LaserSc
         int grid_x = x / view.cell_l;
         int grid_y = y / view.cell_l;
         if(setgrid(grid, grid_x, grid_y, WALL)) {
-            grid.points[grid.points_n].x = grid_x;
-            grid.points[grid.points_n].y = grid_y;
-            grid.points_n++;
+
+            int n = grid.points_n;
+            if( n == 0 || ( n>0                            &&
+                            grid.points[n-1].x != grid_x   ||
+                            grid.points[n-1].y != grid_y       )) {
+
+                grid.points[n].x = grid_x;
+                grid.points[n].y = grid_y;
+                grid.points_n++;
+            }
         }
         inflate(grid, grid_x, grid_y, INFLATED, nav.inflation);
 
@@ -147,28 +157,8 @@ void calc_path_cost(float *path_cost, path_t &path) {
     }
 }
 
-/**
-    laserscan callback
-*/
-void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
-    viz_clear();
-
-    //ROS_INFO("Scan recived: [%f]", msg->scan_time);
-    PTIME_INIT()
-    PTIME_START()
-
-    view_t view;
-    init_view(view, nav.grid_dim);
-
-    grid_t grid;
-    static int *grid_addr=NULL;
-    if(grid_addr == NULL)
-        grid_addr = new int[GRID_MAX_DIM*GRID_MAX_DIM];
-    grid.data = grid_addr;
-    init_grid(grid, nav.grid_dim);
-
-    discretize_laserscan(grid, view, msg);
-
+void draw_grid(grid_t &grid, view_t &view) {
+    
     float_point_t p; p.x = view.x; p.y = view.y;
     viz_rect(p, view.l, view.l, VIEW_COLOR, 1);
     for(int i=0; i<grid.size; i++) { 
@@ -191,6 +181,85 @@ void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
             viz_rect(p, view.cell_l, view.cell_l, col, 0);
         }
     }
+}
+
+void calc_curve(grid_t &grid, int gate_idx, view_t &view) {
+
+    point_t s = grid.gates[gate_idx].s;
+    point_t e = grid.gates[gate_idx].e;
+    viz_line(grid2view(s.x, s.y, view), grid2view(e.x, e.y, view), VIEW_COLOR, 2);
+    int point_idx;
+    for(point_idx=0; point_idx<grid.points_n; point_idx++) 
+        if(grid.points[point_idx].x == s.x && grid.points[point_idx].y == s.y) 
+            break;
+
+    float_point_t sv, s0v;
+    point_t s0;
+    //calc curve intern
+    float s_ang = 0;
+    for(int i=point_idx+1; i < point_idx+4 && i<grid.points_n; i++) {
+        point_t s0 = grid.points[i];
+        float ang = points_angle_rad(s.x, s.y, s0.x, s0.y) + M_PI/2;
+        if(i == point_idx+1)
+            s_ang = ang;
+        else
+            s_ang =  (s_ang + ang)/2;
+    } 
+    sv = grid2view(s.x, s.y, view);
+    s0v.x = sv.x + cos(s_ang)*100;   s0v.y = sv.y + sin(s_ang)*100;    
+    viz_line(sv, s0v, PATH_COLOR, 2);
+    s0 = view2grid(s0v.x, s0v.y, view);
+    grid_line(grid, s0.x, s0.y, s.x, s.y, GATE);
+
+    //calc curve extern
+    s_ang = 0;
+    point_idx--;
+    for(int i=point_idx-1; i >= point_idx-4 && i>=0; i--) {
+        point_t s0 = grid.points[i];
+        float ang = points_angle_rad(e.x, e.y, s0.x, s0.y) + M_PI;
+        if(i == point_idx-1)
+            s_ang = ang;
+        else
+            s_ang =  (s_ang + ang)/2;
+    } 
+    sv = grid2view(e.x, e.y, view);
+    s0v.x = sv.x + cos(s_ang)*100;   s0v.y = sv.y + sin(s_ang)*100;    
+    viz_line(sv, s0v, PATH_COLOR, 2);
+    s0 = view2grid(s0v.x, s0v.y, view);
+    grid_line(grid, s0.x, s0.y, e.x, e.y, GATE);
+}
+
+void draw_yaw(view_t &view) {
+    float size = 50;
+    float_point_t center, pointer;
+    center.x = view.x + view.l + size/2 +10;
+    center.y = view.y + size/2 + 10; 
+    pointer.x = center.x + cos(yaw)*size/2;
+    pointer.y = center.y + sin(yaw)*size/2;
+    viz_line(center, pointer, PATH_COLOR, 1);
+} 
+ 
+/**
+    laserscan callback
+*/
+void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
+    viz_clear();
+
+    //ROS_INFO("Scan recived: [%f]", msg->scan_time);
+    PTIME_INIT()
+    PTIME_START()
+
+    view_t view;
+    init_view(view, nav.grid_dim);
+
+    grid_t grid;
+    static int *grid_addr=NULL;
+    if(grid_addr == NULL)
+        grid_addr = new int[GRID_MAX_DIM*GRID_MAX_DIM];
+    grid.data = grid_addr;
+    init_grid(grid, nav.grid_dim);
+
+    discretize_laserscan(grid, view, msg);
 
     car_t car;
     init_car(car, view, nav.zoom);
@@ -199,18 +268,29 @@ void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
     inflate(grid, xp, yp, 0, 3);
     int to_x = -1, to_y = -1;
     int gate_idx = choosegate(grid, xp, yp);
-    point_t s = grid.gates[gate_idx].s;
-    point_t e = grid.gates[gate_idx].e;
-    viz_line(grid2view(s.x, s.y, view), grid2view(e.x, e.y, view), VIEW_COLOR, 2);
+    /*
+    grid_line(grid, grid.gates[gate_idx].s.x, grid.gates[gate_idx].s.y,
+                    grid.gates[gate_idx].e.x, grid.gates[gate_idx].e.y, EMPTY);
+    calc_curve(grid, gate_idx, view);
+    */
+    to_x = (grid.gates[gate_idx].s.x + grid.gates[gate_idx].e.x)/2;
+    to_y = (grid.gates[gate_idx].s.y + grid.gates[gate_idx].e.y)/2;
 
+    draw_yaw(view); 
 
-    to_x = (s.x + e.x)/2;
-    to_y = (s.y + e.y)/2; 
-    
+    draw_grid(grid, view);   
     path_t path = pathfinding(grid, view, car, xp, yp, to_x, to_y, nav.stop_cost);
     //get x and y for start and goal from cells position
     float_point_t part = grid2view(xp, yp, view);
     float_point_t goal = grid2view(to_x, to_y, view);
+
+    for(int i=1; i< path.size; i++) {
+        float_point_t p0, p1;
+        p0 = grid2view(path.data[i-1].x, path.data[i-1].y, view);
+        p1 = grid2view(path.data[i].x, path.data[i].y, view);
+        viz_circle(p0, 2, PATH_COLOR, 1);
+        viz_line(p0, p1, PATH_COLOR, 1);
+    }
 
     float path_cost[MAX_ITER];
     calc_path_cost(path_cost, path);
@@ -379,6 +459,11 @@ void odom_recv(const nav_msgs::Odometry::ConstPtr& msg) {
 
     pose = msg->pose.pose;
     update_speed(msg->pose.pose.position, msg->header.stamp);
+
+    tf::Quaternion q(   pose.orientation.x, pose.orientation.y,
+                        pose.orientation.z, pose.orientation.w);
+    double roll, pitch;
+    tf::Matrix3x3(q).getRPY(roll, pitch, yaw);
 }
 
 

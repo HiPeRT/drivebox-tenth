@@ -19,7 +19,10 @@ struct dinonav_t {
     bool    enable;
 };
 
-enum grid_vals { EMPTY, WALL, INFLATED, GATE };
+const int EMPTY     = 0;
+const int WALL      = 3;
+const int INFLATED  = 2;
+const int GATE      = 1;
 
 struct view_t {
 

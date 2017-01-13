@@ -50,7 +50,7 @@ int grid_line(grid_t &grid, int x1, int y1, int x2, int y2, int value) {
         x = x + x_inc;
         y = y + y_inc;
         int xx = x, yy = y;
-        if(getgrid(grid, xx, yy) == 0) {
+        if((value == 0 &&  getgrid(grid, xx, yy) == GATE) || getgrid(grid, xx, yy) < value) {
             setgrid(grid, xx, yy, value);
             if(startGx == -1) {
                 startGx = xx; startGy = yy;
