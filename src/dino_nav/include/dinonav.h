@@ -36,6 +36,17 @@ struct car_t {
     float length;
     float width;
 };
+ 
+enum dir_e { LEFT, RIGHT };
+struct sector_t {
+    float l, vel;
+    dir_e dir;
+};
+struct track_t {
+    sector_t sects[32];
+    int sects_n;
+    int cur_sect;
+};
 
 void reconf(dino_nav::DinonavConfig &config, uint32_t level);
 void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg);

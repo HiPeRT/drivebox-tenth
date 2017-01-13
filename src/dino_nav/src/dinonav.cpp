@@ -47,6 +47,7 @@ float car_values[11][3] = {
 ros::Publisher drive_pub, stat_pub;
 
 dinonav_t nav;
+track_t track;
 
 geometry_msgs::Pose pose;
 float estimated_speed;
@@ -160,6 +161,31 @@ void calc_path_cost(float *path_cost, path_t &path) {
     }
 }
 
+void draw_track(track_t &track, view_t &view) { 
+    float_point_t pos;
+    pos.x = view.x + view.l + 100; pos.y = view.y + 300;
+    float s_ang = M_PI/2 + M_PI;
+    float dim = 150;
+
+    float_point_t p = pos;
+    for(int i=0; i<track.sects_n; i++) {
+        sector_t s = track.sects[i];
+        float_point_t next;
+
+        next.x = p.x + cos(s_ang)*s.l*dim;
+        next.y = p.y + sin(s_ang)*s.l*dim;
+        
+        viz_line(p, next, VIEW_COLOR, 1 + (track.cur_sect == i)*4);
+        p = next;
+
+        if(s.dir == LEFT)
+            s_ang -= M_PI/2;
+        else
+            s_ang += M_PI/2; 
+    }
+
+}
+
 void draw_grid(grid_t &grid, view_t &view) {
     
     float_point_t p; p.x = view.x; p.y = view.y;
@@ -262,51 +288,6 @@ void calc_curve(grid_t &grid, int gate_idx, view_t &view) {
             break;
     }
     viz_line(int_v, l_v, PATH_COLOR, 2);
-
-    /*
-    point_t s = grid.gates[gate_idx].s;
-    point_t e = grid.gates[gate_idx].e;
-    viz_line(grid2view(s.x, s.y, view), grid2view(e.x, e.y, view), VIEW_COLOR, 2);
-    int point_idx;
-    for(point_idx=0; point_idx<grid.points_n; point_idx++) 
-        if(grid.points[point_idx].x == s.x && grid.points[point_idx].y == s.y) 
-            break;
-
-    float_point_t sv, s0v;
-    point_t s0;
-    //calc curve intern
-    float s_ang = 0;
-    for(int i=point_idx+1; i < point_idx+4 && i<grid.points_n; i++) {
-        point_t s0 = grid.points[i];
-        float ang = points_angle_rad(s.x, s.y, s0.x, s0.y) + M_PI/2;
-        if(i == point_idx+1)
-            s_ang = ang;
-        else
-            s_ang =  (s_ang + ang)/2;
-    } 
-    sv = grid2view(s.x, s.y, view);
-    s0v.x = sv.x + cos(s_ang)*100;   s0v.y = sv.y + sin(s_ang)*100;    
-    viz_line(sv, s0v, PATH_COLOR, 2);
-    s0 = view2grid(s0v.x, s0v.y, view);
-    grid_line(grid, s0.x, s0.y, s.x, s.y, GATE);
-
-    //calc curve extern
-    s_ang = 0;
-    point_idx--;
-    for(int i=point_idx-1; i >= point_idx-4 && i>=0; i--) {
-        point_t s0 = grid.points[i];
-        float ang = points_angle_rad(e.x, e.y, s0.x, s0.y) + M_PI;
-        if(i == point_idx-1)
-            s_ang = ang;
-        else
-            s_ang =  (s_ang + ang)/2;
-    } 
-    sv = grid2view(e.x, e.y, view);
-    s0v.x = sv.x + cos(s_ang)*100;   s0v.y = sv.y + sin(s_ang)*100;    
-    viz_line(sv, s0v, PATH_COLOR, 2);
-    s0 = view2grid(s0v.x, s0v.y, view);
-    grid_line(grid, s0.x, s0.y, e.x, e.y, GATE);
-    */
 }
 
 void draw_yaw(view_t &view) {
@@ -318,7 +299,6 @@ void draw_yaw(view_t &view) {
     pointer.y = center.y + sin(yaw)*size/2;
     viz_line(center, pointer, PATH_COLOR, 1);
 
-    static int curves = 0;
     static float prec_yaw = yaw;
     static bool  dir = false;
     float delta = prec_yaw -yaw;
@@ -333,7 +313,7 @@ void draw_yaw(view_t &view) {
     viz_arc(center.x, center.y, size/2, yaw, delta, VIEW_COLOR, 1);
     if(fabs(delta) > M_PI/2 - M_PI/10) {
         prec_yaw = yaw;
-        curves++;
+        track.cur_sect = (track.cur_sect +1) % track.sects_n;
     }
 } 
  
@@ -377,6 +357,7 @@ void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
     to_y = (grid.gates[gate_idx].s.y + grid.gates[gate_idx].e.y)/2;
 
     draw_yaw(view); 
+    draw_track(track, view);
 
     path_t path = pathfinding(grid, view, car, xp, yp, to_x, to_y, nav.stop_cost);
     //get x and y for start and goal from cells position

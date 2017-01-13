@@ -6,7 +6,48 @@
 #include "std_msgs/Float32.h"
 #include "dino_nav/Stat.h"
 
+#include <tinyxml.h>
+#include <ros/package.h>
+
 extern ros::Publisher drive_pub, stat_pub; //speed_pub;
+extern track_t track;
+
+bool load_track(const char *path) {
+
+    TiXmlDocument doc(path);
+
+    if(doc.LoadFile()) {
+        printf("reading track: %s\n", path);
+        track.cur_sect = 0;
+
+        int i=0;
+        TiXmlElement * sect = doc.FirstChildElement()->FirstChildElement();
+        while(sect != NULL) {
+            std::cout<<"Sector "<<i<<"\t";
+            
+            sect->QueryFloatAttribute("l", &track.sects[i].l);
+            sect->QueryFloatAttribute("vel", &track.sects[i].vel);
+            
+            if(strcmp(sect->Attribute("dir"), "left") == 0) 
+                track.sects[i].dir = LEFT;
+            else
+                track.sects[i].dir = RIGHT;
+
+            std::cout<<"l"<<": "<<track.sects[i].l<<"\t"<<track.sects[i].vel<<"\t";
+            std::cout<<"dir: "<<track.sects[i].dir;
+            std::cout<<"\n";
+            sect = sect->NextSiblingElement();
+            i++;
+            track.sects_n++;
+        }
+        return true;
+    } else {
+        printf("unable to load track: %s\n", path);
+        return false;
+    }
+
+}
+
 
 int main(int argc, char **argv) {
 
@@ -28,8 +69,12 @@ int main(int argc, char **argv) {
     f = boost::bind(&reconf, _1, _2);
     server.setCallback(f);
 
-    viz_init();
+    std::string path = ros::package::getPath("dino_nav");
+    path = path + "/tracks/track.xml";
+    if(!load_track(path.c_str()))
+        return -1;
 
+    viz_init();
     while(viz_update()) {
         ros::spinOnce();
     }

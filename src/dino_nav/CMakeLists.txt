@@ -1,12 +1,16 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(dino_nav)
 
-find_package(catkin REQUIRED COMPONENTS roscpp rospy std_msgs nav_msgs geometry_msgs genmsg race dynamic_reconfigure message_generation)
+find_package(catkin REQUIRED COMPONENTS roslib roscpp rospy 
+              std_msgs nav_msgs geometry_msgs genmsg race 
+              dynamic_reconfigure message_generation)
 
 find_package(PkgConfig)
 pkg_search_module(ALLEGRO5 allegro-5.0)
 pkg_search_module(ALLEGRO_PRIMITIVES allegro_primitives-5.0)
 pkg_search_module(ALLEGRO_TTF allegro_ttf-5.0)
+
+pkg_search_module(TinyXML tinyxml)
 
 add_message_files(
    FILES
@@ -29,15 +33,16 @@ generate_dynamic_reconfigure_options(
 catkin_package(
     CATKIN_DEPENDS message_runtime
     INCLUDE_DIRS include
+    DEPENDS TinyXML
 )
 
 
-include_directories(include ${catkin_INCLUDE_DIRS})
+include_directories(include ${catkin_INCLUDE_DIRS} ${TinyXML_INCLUDE_DIRS})
 
 add_definitions("-std=c++11")
 add_executable(dinonav src/main.cpp src/viz.cpp src/dinonav.cpp src/pathfind.cpp src/common.cpp src/grid.cpp)
 target_link_libraries(dinonav  ${catkin_LIBRARIES} ${ALLEGRO5_LIBRARIES} ${ALLEGRO_PRIMITIVES_LIBRARIES}
-                               ${ALLEGRO_TTF_LIBRARIES})
+                               ${ALLEGRO_TTF_LIBRARIES} ${TinyXML_LIBRARIES})
 # make sure configure headers are built before any node using them
 add_dependencies(dinonav ${PROJECT_NAME}_gencfg)
 
