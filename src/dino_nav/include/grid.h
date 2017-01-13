@@ -18,6 +18,7 @@ struct grid_t {
     int size;
 
     point_t points[GRID_MAX_DIM*2];
+    int middle_id;
     int points_n;
 
     gate_t gates[GRID_MAX_GATES];

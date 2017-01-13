@@ -34,6 +34,7 @@ catkin_package(
 
 include_directories(include ${catkin_INCLUDE_DIRS})
 
+add_definitions("-std=c++11")
 add_executable(dinonav src/main.cpp src/viz.cpp src/dinonav.cpp src/pathfind.cpp src/common.cpp src/grid.cpp)
 target_link_libraries(dinonav  ${catkin_LIBRARIES} ${ALLEGRO5_LIBRARIES} ${ALLEGRO_PRIMITIVES_LIBRARIES}
                                ${ALLEGRO_TTF_LIBRARIES})

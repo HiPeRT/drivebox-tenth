@@ -10,7 +10,8 @@
 ALLEGRO_DISPLAY *display;
 ALLEGRO_EVENT_QUEUE *event_queue;
 ALLEGRO_TIMER *timer;
-ALLEGRO_FONT *font;
+const int FONTS = 32;
+ALLEGRO_FONT *font[FONTS];
 
 ALLEGRO_MOUSE_STATE mouse;
 
@@ -33,8 +34,10 @@ bool viz_init() {
     al_init_font_addon(); // initialize the font addon
     al_init_ttf_addon();// initialize the ttf (True Type Font) addon
 
-    font = al_load_ttf_font("/usr/share/fonts/truetype/freefont/FreeMono.ttf", 15,0 );
-    
+    for(int i=0; i<32; i++) {
+        font[i] = al_load_ttf_font("/usr/share/fonts/truetype/freefont/FreeMono.ttf", 5+i,0 );
+    }
+
     if (!font){
         printf("Could not load font.\n");
         return false;
@@ -94,6 +97,28 @@ void viz_circle(float_point_t p, float r, ALLEGRO_COLOR col, float thick) {
 
 void viz_line(float_point_t a, float_point_t b, ALLEGRO_COLOR col, float thick) {
     al_draw_line(a.x, a.y, b.x, b.y, col, thick);
+}
+
+
+void viz_arc(float cx, float cy, float r, float start_theta, float delta_theta, 
+             ALLEGRO_COLOR col, float thick) {
+
+        al_draw_arc(cx, cy, r, start_theta, delta_theta, col, thick);
+}
+
+void viz_text(float x, float y, int dim, ALLEGRO_COLOR col, const char *format, ...) {
+
+    int font_id = dim-5;
+    if(font_id <0) font_id=0;
+    if(font_id >FONTS-1) font_id=FONTS-1;
+
+    char buf[512];
+    va_list va;
+    va_start (va, format);
+    vsprintf (buf, format, va);
+    va_end (va);
+
+    al_draw_text(font[font_id], col, x, y, 0, buf);
 }
 
 void viz_clear() {
