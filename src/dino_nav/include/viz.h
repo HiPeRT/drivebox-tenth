@@ -26,6 +26,8 @@ void viz_circle(float_point_t p, float r, ALLEGRO_COLOR col, float thick);
 void viz_line(float_point_t a, float_point_t b, ALLEGRO_COLOR col, float thick);
 void viz_arc(float cx, float cy, float r, float start_theta, float delta_theta, 
              ALLEGRO_COLOR col, float thick);
+void viz_triangle(float_point_t a, float_point_t b, float_point_t c, 
+                  ALLEGRO_COLOR col, float thick);
              
 void viz_text(float x, float y, int dim, ALLEGRO_COLOR col, const char *format, ...);
  

@@ -92,7 +92,7 @@ void viz_circle(float_point_t p, float r, ALLEGRO_COLOR col, float thick) {
     if(thick <= 0)
         al_draw_filled_circle(p.x, p.y, r, col);
     else
-        al_draw_circle(p.x, p.y, r, col, 1);
+        al_draw_circle(p.x, p.y, r, col, thick);
 }
 
 void viz_line(float_point_t a, float_point_t b, ALLEGRO_COLOR col, float thick) {
@@ -103,7 +103,15 @@ void viz_line(float_point_t a, float_point_t b, ALLEGRO_COLOR col, float thick) 
 void viz_arc(float cx, float cy, float r, float start_theta, float delta_theta, 
              ALLEGRO_COLOR col, float thick) {
 
-        al_draw_arc(cx, cy, r, start_theta, delta_theta, col, thick);
+    al_draw_arc(cx, cy, r, start_theta, delta_theta, col, thick);
+}
+
+void viz_triangle(float_point_t a, float_point_t b, float_point_t c, ALLEGRO_COLOR col, float thick) {
+
+    if(thick <= 0)
+        al_draw_filled_triangle(a.x, a.y, b.x, b.y, c.x, c.y, col);
+    else    
+        al_draw_triangle(a.x, a.y, b.x, b.y, c.x, c.y, col, thick);
 }
 
 void viz_text(float x, float y, int dim, ALLEGRO_COLOR col, const char *format, ...) {

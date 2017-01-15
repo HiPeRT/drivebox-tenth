@@ -212,6 +212,31 @@ void draw_grid(grid_t &grid, view_t &view) {
     }
 }
 
+void draw_signal(float_point_t center, float r, dir_e d) {
+
+    viz_circle(center, r, RGBA(1,1,1,1), 0);
+    viz_circle(center, r, RGBA(1,0,0,1), r/5);
+    float_point_t i, e;
+    i.x = center.x - r/1.5;
+    e.x = center.x + r/1.5;
+    i.y = e.y = center.y; 
+    viz_line(i, e, RGBA(0,0,0,1), r/10);
+    
+    float_point_t a, b;
+    if(d == LEFT) {
+        a.x = i.x + r/3;
+        b.x = i.x + r/3;
+    } else {
+        i.x = e.x;
+        a.x = i.x - r/3;
+        b.x = i.x - r/3;
+    }
+    
+    a.y = i.y - r/3;
+    b.y = i.y + r/3;
+    viz_triangle(i, a, b, RGBA(0,0,0,1), 0);
+}
+
 void calc_curve(grid_t &grid, int gate_idx, view_t &view) {
 
     point_t g1 = grid.gates[gate_idx].s;
@@ -270,6 +295,7 @@ void calc_curve(grid_t &grid, int gate_idx, view_t &view) {
             s_ang =  (s_ang + ang)/2;
     } 
 
+    //reach opposite wall
     float_point_t int_v = grid2view(internal.x, internal.y, view);
     float_point_t opp_v, l_v;
     for(int i=1*nav.inflation +2; i<grid.size; i++) {
@@ -280,6 +306,7 @@ void calc_curve(grid_t &grid, int gate_idx, view_t &view) {
     }
     viz_line(int_v, opp_v, PATH_COLOR, 2);
 
+    //reach end wall
     s_ang -= M_PI/2*sign;
     for(int i=1*nav.inflation +2; i<grid.size; i++) {
         l_v.x = int_v.x + cos(s_ang)*view.cell_l*i;   l_v.y = int_v.y + sin(s_ang)*view.cell_l*i;    
@@ -288,6 +315,28 @@ void calc_curve(grid_t &grid, int gate_idx, view_t &view) {
             break;
     }
     viz_line(int_v, l_v, PATH_COLOR, 2);
+
+    //sign on the center of curve
+    float_point_t center;
+    center.x = (opp_v.x + l_v.x)/2;
+    center.y = (opp_v.y + l_v.y)/2;
+    draw_signal(center, 15, track.sects[track.cur_sect].dir);
+
+    //get curve passed
+    int_v.y += 80;
+    opp_v.y += 80;
+    viz_line(int_v, opp_v, VIEW_COLOR, 2);
+    static int time = 0;
+    static bool start = false;
+    if(start)
+        time++;
+    if(!start && opp_v.y > view.y + view. l && int_v.y > view.y + view. l)
+        start = true;
+    if(start && time >= 40 && opp_v.y < view.y + view. l && opp_v.y < view.y + view. l) {
+        track.cur_sect = (track.cur_sect +1) % track.sects_n;
+        time = 0;
+        start = false;
+    }
 }
 
 void draw_yaw(view_t &view) {
@@ -313,7 +362,6 @@ void draw_yaw(view_t &view) {
     viz_arc(center.x, center.y, size/2, yaw, delta, VIEW_COLOR, 1);
     if(fabs(delta) > M_PI/2 - M_PI/10) {
         prec_yaw = yaw;
-        track.cur_sect = (track.cur_sect +1) % track.sects_n;
     }
 } 
  
