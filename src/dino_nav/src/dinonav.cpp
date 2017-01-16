@@ -127,12 +127,11 @@ void init_car(car_t &car, view_t &view, float zoom) {
     car.width  = (10.0f/zoom)*mul;
 }
 
-void calc_path_cost(float *path_cost, path_t &path) {
+void calc_path_cost(float *path_cost, path_t &path, view_t &view) {
 
     float_point_t fpath[MAX_ITER];    
     for(int i=0; i<path.size; i++) {
-        fpath[i].x = path.data[i].x;
-        fpath[i].y = path.data[i].y;
+        fpath[i] = grid2view(path.data[i].x, path.data[i].y, view);
 
         path_cost[i] = 0;
     }
@@ -142,7 +141,8 @@ void calc_path_cost(float *path_cost, path_t &path) {
     float prev_ang = 0;
     for(int i=path.size-1; i>=0; i--) { 
         float_point_t fp = fpath[i];
-            
+        viz_circle(fp, 2, PATH_COLOR, 0.5f);
+
         int next_i = i - look_ahead;
         if(next_i <0) next_i = 0;
         float_point_t next = fpath[next_i];
@@ -210,6 +210,10 @@ void draw_grid(grid_t &grid, view_t &view) {
             viz_rect(p, view.cell_l, view.cell_l, col, 0);
         }
     }
+
+    p.x = view.x + grid.points[grid.middle_id].x*view.cell_l;
+    p.y = view.y + grid.points[grid.middle_id].y*view.cell_l;
+    viz_rect(p, view.cell_l, view.cell_l, PATH_COLOR, 0);
 }
 
 void draw_signal(float_point_t center, float r, dir_e d) {
@@ -258,6 +262,8 @@ void calc_curve(grid_t &grid, int gate_idx, view_t &view) {
             }
         }
     }
+
+/*
     int point_idx;
     if(point1 < grid.middle_id && point2 < grid.middle_id) {
         sign = -1;
@@ -275,7 +281,28 @@ void calc_curve(grid_t &grid, int gate_idx, view_t &view) {
 
     } else {
         return;
-    }
+    }*/
+
+    internal = grid.points[point1];
+    external = grid.points[point2];
+    float_point_t i = grid2view(internal.x, internal.y, view);
+    float_point_t e = grid2view(external.x, external.y, view);
+    float gate_ang = points_angle_rad(e.x, e.y, i.x, i.y);
+    viz_text((i.x + e.x)/2, (i.y + e.y)/2, 15, RGBA(1,1,1,1), "%f", gate_ang);
+
+    int point_idx;
+    if(fabs(gate_ang) < 0.5f)
+        return;
+    if(gate_ang > 0) {
+        point_idx = point1;
+        sign = -1;
+    } else if(gate_ang < 0) {
+        point_idx = point2;
+        sign = +1;
+        internal = grid.points[point2];
+        external = grid.points[point1];
+    } 
+
     viz_line(   grid2view(internal.x, internal.y, view), 
                 grid2view(external.x, external.y, view), VIEW_COLOR, 1);
 
@@ -304,7 +331,7 @@ void calc_curve(grid_t &grid, int gate_idx, view_t &view) {
         if(getgrid(grid, opp.x, opp.y) > GATE)
             break;
     }
-    viz_line(int_v, opp_v, PATH_COLOR, 2);
+    viz_line(int_v, opp_v, PATH_COLOR, 1);
 
     //reach end wall
     s_ang -= M_PI/2*sign;
@@ -314,7 +341,7 @@ void calc_curve(grid_t &grid, int gate_idx, view_t &view) {
         if(getgrid(grid, l.x, l.y) > GATE)
             break;
     }
-    viz_line(int_v, l_v, PATH_COLOR, 2);
+    viz_line(int_v, l_v, PATH_COLOR, 1);
 
     //sign on the center of curve
     float_point_t center;
@@ -325,7 +352,7 @@ void calc_curve(grid_t &grid, int gate_idx, view_t &view) {
     //get curve passed
     int_v.y += 80;
     opp_v.y += 80;
-    viz_line(int_v, opp_v, VIEW_COLOR, 2);
+    viz_line(int_v, opp_v, VIEW_COLOR, 1);
     static int time = 0;
     static bool start = false;
     if(start)
@@ -416,12 +443,12 @@ void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
         float_point_t p0, p1;
         p0 = grid2view(path.data[i-1].x, path.data[i-1].y, view);
         p1 = grid2view(path.data[i].x, path.data[i].y, view);
-        viz_circle(p0, 2, PATH_COLOR, 1);
-        viz_line(p0, p1, PATH_COLOR, 1);
+        viz_circle(p0, 2, PATH_COLOR, 0.5f);
+        //viz_line(p0, p1, PATH_COLOR, 1);
     }
 
     float path_cost[MAX_ITER];
-    calc_path_cost(path_cost, path);
+    calc_path_cost(path_cost, path, view);
 
     float car_break_dst = car.length *estimated_speed*2;
     float_point_t break_point = grid2view(to_x, to_y, view);
