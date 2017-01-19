@@ -127,39 +127,6 @@ void init_car(car_t &car, view_t &view, float zoom) {
     car.width  = (10.0f/zoom)*mul;
 }
 
-void calc_path_cost(float *path_cost, path_t &path, view_t &view) {
-
-    float_point_t fpath[MAX_ITER];    
-    for(int i=0; i<path.size; i++) {
-        fpath[i] = grid2view(path.data[i].x, path.data[i].y, view);
-
-        path_cost[i] = 0;
-    }
-     
-    int look_ahead = path.size - path.start;
-
-    float prev_ang = 0;
-    for(int i=path.size-1; i>=0; i--) { 
-        float_point_t fp = fpath[i];
-        viz_circle(fp, 2, PATH_COLOR, 0.5f);
-
-        int next_i = i - look_ahead;
-        if(next_i <0) next_i = 0;
-        float_point_t next = fpath[next_i];
-
-        float sangle_g = prev_ang*180/M_PI/45*100;
-        float ang = points_angle(fp.x, fp.y, next.x, next.y) - sangle_g;
-        if(ang > 100) ang = 100;
-        if(ang < -100)ang = -100;
-        path_cost[i] = int(fabs(ang));
-
-        float a = points_angle_rad(fp.x, fp.y, next.x, next.y);
-        for(int j=i-1; j>next_i; j--) {
-            rotate_point(fpath[j], fp, a - points_angle_rad(fp.x, fp.y, fpath[j].x, fpath[j].y));
-        }
-        prev_ang = (a + M_PI/2);
-    }
-}
 
 void draw_track(track_t &track, view_t &view) { 
     float_point_t pos;
@@ -434,100 +401,25 @@ void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
     draw_yaw(view); 
     draw_track(track, view);
 
-    path_t path = pathfinding(grid, view, car, xp, yp, to_x, to_y, nav.stop_cost);
     //get x and y for start and goal from cells position
-    float_point_t part = grid2view(xp, yp, view);
-    float_point_t goal = grid2view(to_x, to_y, view);
+    point_t part, goal;
+    part.x = xp;    part.y = yp;
+    goal.x = to_x;  goal.y = to_y;
+    setgrid(grid, goal.x, goal.y, 0);
+
+    path_t path = pathfinding(grid, view, part, goal);
 
     for(int i=1; i< path.size; i++) {
-        float_point_t p0, p1;
-        p0 = grid2view(path.data[i-1].x, path.data[i-1].y, view);
-        p1 = grid2view(path.data[i].x, path.data[i].y, view);
-        viz_circle(p0, 2, PATH_COLOR, 0.5f);
-        //viz_line(p0, p1, PATH_COLOR, 1);
+        viz_circle(path.data[i], 2, PATH_COLOR, 1.0f);
+        //viz_line(path.data[i-1], path.data[i], PATH_COLOR, 1);
     }
 
-    float path_cost[MAX_ITER];
-    calc_path_cost(path_cost, path, view);
-
-    float car_break_dst = car.length *estimated_speed*2;
-    float_point_t break_point = grid2view(to_x, to_y, view);
-    float break_point_dst = 10000;
-    float break_point_cost = 0;
-    for(int i = path.size-1; i>=0; i--) {
-        float cost = path_cost[i];
-        if(cost > 2 && break_point_dst > 9999){
-            break_point = grid2view(path.data[i].x, path.data[i].y, view);
-            break_point_dst = point_dst(part, break_point);
-            break_point_cost = cost;
-
-            int end = i - 28;
-            if(end <0) end = 0;
-            for(i=i-1; i>=end; i--) 
-                if(path_cost[i] > cost) break_point_cost = path_cost[i];
-
-            break;
-        } 
-    } 
-    printf("cost: %f ", break_point_cost);
-
-    //compute angle for the steer
-    static float precedent_steer = 0;
-    float ang  = points_angle(part.x, part.y, goal.x, goal.y);
-    if(ang >  100) ang=100;
-    if(ang < -100) ang=-100;
-
-    //get break point distance
-    static float precedent_throttle = 0;
-    float throttle = 0;
-    if(fabs(ang) > 2) {
-        int a = fabs(ang)/10;
-        if(a==0) a = 1;
-
-        float delta = estimated_speed - car_values[a][2];
-        if(delta < 0) {
-            throttle = car_values[a][1];
-            if(break_point_cost < car_break_dst && break_point_cost > fabs(ang)) {
-                int a = fabs(break_point_cost)/10;
-                if(a==0) a = 1;
-                float delta = estimated_speed - car_values[a][2];
-                if(delta >0)
-                    throttle = - delta*20;
-            } else {
-                ang = car_values[a][0] *ang/fabs(ang);
-            }
-            printf("apply racing values s: %f t: %f\n", ang, throttle);
-        } else {
-                throttle = -delta*20;
-            printf("to much speed for s: %f, using t: %f\n", ang, throttle);
-        }
-        
-    } else {
-        if(break_point_dst > car_break_dst ) {
-            printf("open max throttle\n");
-            throttle = precedent_throttle + 5;
-        } else {
-            int a = fabs(break_point_cost)/10;
-            if(a==0) a= 1;
-            float delta = estimated_speed - car_values[a][2];
-            
-            printf("must break to: %f\n", car_values[a][2]);
-            if(precedent_throttle >0) precedent_throttle = 0;
-            throttle = precedent_throttle - delta;
-        }
-    }
-    if(throttle > 100) throttle = 100;
-    if(throttle < -100) throttle = -100;
-    precedent_throttle = throttle;
-
-    float steer = precedent_steer -  (precedent_steer -ang)/2;
-    if(steer > 100)  steer = 100;
-    if(steer < -100) steer = -100;
-
+    float throttle = 10;
+    float steer = 0;
     if(nav.enable) {
         race::drive_param m;
 
-        m.velocity = 10;
+        m.velocity = throttle;
         m.angle = steer;
         drive_pub.publish(m);
     }
@@ -542,12 +434,11 @@ void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
     stat.path_size = path.size;
     stat.path_start = path.start;
     for(int i=0; i<path.size; i++) {     
-        dino_nav::Point point;
+        dino_nav::FloatPoint point;
         point.x = path.data[i].x;
         point.y = path.data[i].y;
 
         stat.path.push_back(point);
-        stat.path_cost.push_back(path_cost[i]);
     }
     stat.throttle = throttle;
     stat.steer = steer;

@@ -30,6 +30,8 @@ void viz_triangle(float_point_t a, float_point_t b, float_point_t c,
                   ALLEGRO_COLOR col, float thick);
              
 void viz_text(float x, float y, int dim, ALLEGRO_COLOR col, const char *format, ...);
- 
+
+float_point_t viz_mouse();
+
 #endif //VIZ_H
 

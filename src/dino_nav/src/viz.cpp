@@ -70,10 +70,19 @@ bool viz_update() {
 
     if(redraw && al_event_queue_is_empty(event_queue)) {
         redraw = false;
-        al_get_mouse_state(&mouse);
     }
     return true;
 }
+
+float_point_t viz_mouse() {
+    al_get_mouse_state(&mouse);
+
+    float_point_t p;
+    p.x = mouse.x;
+    p.y = mouse.y;
+    return p;
+}
+
 
 void viz_destroy() {
     al_destroy_timer(timer);

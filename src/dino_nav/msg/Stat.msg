@@ -6,8 +6,7 @@ float32 zoom
 
 int32 path_size 
 int32 path_start
-Point[] path
-float32[] path_cost
+FloatPoint[] path
 
 float32 throttle
 float32 steer

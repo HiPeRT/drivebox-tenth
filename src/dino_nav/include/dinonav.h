@@ -37,7 +37,7 @@ struct car_t {
     float width;
 };
  
-enum dir_e { LEFT, RIGHT };
+enum dir_e { LEFT, RIGHT, UP, DOWN };
 struct sector_t {
     float l, vel;
     dir_e dir;
