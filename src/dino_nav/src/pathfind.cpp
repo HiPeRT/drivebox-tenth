@@ -68,7 +68,7 @@ class PQI : public std::priority_queue<node_t*, std::vector<node_t*>, node_comp>
         std::vector<node_t*>& impl() { return c; }
 };
 
-path_t pathfinding(grid_t &grid, view_t &view, point_t &s, point_t &e) {
+path_t pathfinding(grid_t &grid, view_t &view, point_t &s, point_t &e, point_t &curve) {
 
     PQI open;
     int status[grid.size*grid.size];
@@ -79,9 +79,6 @@ path_t pathfinding(grid_t &grid, view_t &view, point_t &s, point_t &e) {
     if(nodes == NULL)
         nodes = new node_t[MAX_ITER*4];
 
-
-    point_t curve = view2grid(viz_mouse().x, viz_mouse().y, view);
-
     int n_nodes = 0;
     node_t *start = &nodes[n_nodes++];
     start->pos = s;
@@ -91,7 +88,6 @@ path_t pathfinding(grid_t &grid, view_t &view, point_t &s, point_t &e) {
     open.push(start);
     
     node_t *n;
-    node_t *good_end = NULL;   
     int j;
     for(j=0; open.size()>0 && j<MAX_ITER; j++) {
         n = open.top();
@@ -99,29 +95,33 @@ path_t pathfinding(grid_t &grid, view_t &view, point_t &s, point_t &e) {
         status[node_id(grid, n)] = -1;
 
         point_t p = n->pos;
-        if(p.x == e.x && p.y == e.y) {
-            if(good_end == NULL || good_end->cost > n->cost) {
-                good_end = n;
-                continue;
-            }
+        if(e.x -1 <= p.x && e.x +1 >= p.x && e.y -1 <= p.y && e.y +1 >= p.y) {
+            break;
         }
         get_neighbours(n, &nodes[n_nodes], n_nodes);
 
         for(int i=0; i< 3; i++) {
             node_t *nbr = &nodes[n_nodes++];
-            viz_line(grid2view(p.x, p.y, view), grid2view(nbr->pos.x, nbr->pos.y, view), RGBA(1,0,0,0.1f), 1);
+            viz_line(grid2view(p.x, p.y, view), grid2view(nbr->pos.x, nbr->pos.y, view), RGBA(1,0,0,0.06f), 1);
 
             int val = getgrid(grid, nbr->pos.x, nbr->pos.y);
             if(val == 0 && status[node_id(grid, nbr)] >= 0) {
 
-                if(nbr->pos.y < curve.y) {
-                    nbr->cost = view.cell_l + (abs(nbr->pos.x - e.x) + abs(nbr->pos.y - e.y))*view.cell_l;
+                if(curve.x >0 && curve.y > 0 && nbr->pos.y > curve.y) {
+                    float dx1 = nbr->pos.x - curve.x;
+                    float dy1 = nbr->pos.y - curve.y;
+                    float dx2 = s.x - curve.x;
+                    float dy2 = s.y - curve.y;
+                    float cross = fabs(dx1*dy2 - dx2*dy1);
+                    nbr->cost = cross*0.001;
                 } else {
-                    nbr->cost = view.cell_l + (abs(nbr->pos.x - curve.x) + abs(nbr->pos.y - curve.y))*view.cell_l;
+                    float dx1 = nbr->pos.x - e.x;
+                    float dy1 = nbr->pos.y - e.y;
+                    float dx2 = curve.x - e.x;
+                    float dy2 = curve.y - e.y;
+                    float cross = fabs(dx1*dy2 - dx2*dy1);
+                    nbr->cost = cross*0.001;
                 }
-
-                if(nbr->dir == nbr->parent->dir)
-                    nbr->cost += view.cell_l/2;
                    
                 int stat = status[node_id(grid, nbr)];
                 if(stat == 0) {
@@ -140,7 +140,6 @@ path_t pathfinding(grid_t &grid, view_t &view, point_t &s, point_t &e) {
         
     }
     
-    n = good_end;
     path_t path;
     path.size = 0;
 
@@ -148,6 +147,21 @@ path_t pathfinding(grid_t &grid, view_t &view, point_t &s, point_t &e) {
         path.data[path.size++] = grid2view(n->pos.x, n->pos.y, view);
         n = n->parent;
     }
+    path.start = path.size - 18;
+    if(path.start < 0)
+        path.start = 0;
+
+    //shortcuts path
+    for(int i=path.start; i<path.size-2; i++) {
+        point_t p = view2grid(path.data[i].x, path.data[i].y, view);
+
+        if(grid_line_control(grid, s.x, s.y, p.x, p.y)) {
+            path.start = i;
+            break;
+        }
+    }
+    
+
     printf("iter %d, size: %d\n", j, path.size);
 
     return path;

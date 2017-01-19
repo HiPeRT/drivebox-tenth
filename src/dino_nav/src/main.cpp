@@ -26,15 +26,16 @@ bool load_track(const char *path) {
             std::cout<<"Sector "<<i<<"\t";
             
             sect->QueryFloatAttribute("l", &track.sects[i].l);
+            sect->QueryFloatAttribute("enter", &track.sects[i].enter);
             sect->QueryFloatAttribute("vel", &track.sects[i].vel);
-            
+
             if(strcmp(sect->Attribute("dir"), "left") == 0) 
                 track.sects[i].dir = LEFT;
             else
                 track.sects[i].dir = RIGHT;
 
-            std::cout<<"l"<<": "<<track.sects[i].l<<"\t"<<track.sects[i].vel<<"\t";
-            std::cout<<"dir: "<<track.sects[i].dir;
+            std::cout<<"l: "<<track.sects[i].l<<"\t vel: "<<track.sects[i].vel<<"\t";
+            std::cout<<" ent: "<<track.sects[i].enter<<"\t dir: "<<track.sects[i].dir;
             std::cout<<"\n";
             sect = sect->NextSiblingElement();
             i++;

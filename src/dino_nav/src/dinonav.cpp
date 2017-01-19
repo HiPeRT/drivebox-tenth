@@ -208,7 +208,11 @@ void draw_signal(float_point_t center, float r, dir_e d) {
     viz_triangle(i, a, b, RGBA(0,0,0,1), 0);
 }
 
-void calc_curve(grid_t &grid, int gate_idx, view_t &view) {
+point_t calc_curve(grid_t &grid, int gate_idx, view_t &view) {
+    
+    point_t curve;
+    curve.x = -1;
+    curve.y = -1;
 
     point_t g1 = grid.gates[gate_idx].s;
     point_t g2 = grid.gates[gate_idx].e;
@@ -259,7 +263,7 @@ void calc_curve(grid_t &grid, int gate_idx, view_t &view) {
 
     int point_idx;
     if(fabs(gate_ang) < 0.5f)
-        return;
+        return curve;
     if(gate_ang > 0) {
         point_idx = point1;
         sign = -1;
@@ -292,13 +296,20 @@ void calc_curve(grid_t &grid, int gate_idx, view_t &view) {
     //reach opposite wall
     float_point_t int_v = grid2view(internal.x, internal.y, view);
     float_point_t opp_v, l_v;
+    float width = 0;
     for(int i=1*nav.inflation +2; i<grid.size; i++) {
         opp_v.x = int_v.x + cos(s_ang)*view.cell_l*i;   opp_v.y = int_v.y + sin(s_ang)*view.cell_l*i;    
         point_t opp = view2grid(opp_v.x, opp_v.y, view);
+        width = i;
         if(getgrid(grid, opp.x, opp.y) > GATE)
             break;
     }
     viz_line(int_v, opp_v, PATH_COLOR, 1);
+    
+    float_point_t curve_v;
+    curve_v.x = int_v.x + cos(s_ang)*view.cell_l*(width*track.sects[track.cur_sect].enter);   
+    curve_v.y = int_v.y + sin(s_ang)*view.cell_l*(width*track.sects[track.cur_sect].enter);   
+    curve = view2grid(curve_v.x, curve_v.y, view);
 
     //reach end wall
     s_ang -= M_PI/2*sign;
@@ -331,6 +342,8 @@ void calc_curve(grid_t &grid, int gate_idx, view_t &view) {
         time = 0;
         start = false;
     }
+
+    return curve;
 }
 
 void draw_yaw(view_t &view) {
@@ -393,7 +406,7 @@ void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
                     grid.gates[gate_idx].e.x, grid.gates[gate_idx].e.y, EMPTY);
     */
     draw_grid(grid, view);   
-    calc_curve(grid, gate_idx, view);
+    point_t curve = calc_curve(grid, gate_idx, view);
     
     to_x = (grid.gates[gate_idx].s.x + grid.gates[gate_idx].e.x)/2;
     to_y = (grid.gates[gate_idx].s.y + grid.gates[gate_idx].e.y)/2;
@@ -407,15 +420,21 @@ void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
     goal.x = to_x;  goal.y = to_y;
     setgrid(grid, goal.x, goal.y, 0);
 
-    path_t path = pathfinding(grid, view, part, goal);
+    path_t path = pathfinding(grid, view, part, goal, curve);
 
     for(int i=1; i< path.size; i++) {
         viz_circle(path.data[i], 2, PATH_COLOR, 1.0f);
         //viz_line(path.data[i-1], path.data[i], PATH_COLOR, 1);
     }
 
-    float throttle = 10;
-    float steer = 0;
+    float_point_t steer_p = grid2view(part.x, part.y, view); 
+    viz_line(steer_p, path.data[path.start], VIEW_COLOR, 2);
+
+    float throttle = 20;
+    float steer = points_angle(steer_p.x, steer_p.y, path.data[path.start].x, path.data[path.start].y);
+    if(steer > 100) steer = 100;
+    if(steer < -100) steer = -100;
+
     if(nav.enable) {
         race::drive_param m;
 
