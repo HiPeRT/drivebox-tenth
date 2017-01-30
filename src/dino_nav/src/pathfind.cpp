@@ -68,12 +68,17 @@ class PQI : public std::priority_queue<node_t*, std::vector<node_t*>, node_comp>
         std::vector<node_t*>& impl() { return c; }
 };
 
-path_t pathfinding(grid_t &grid, view_t &view, point_t &s, point_t &e, point_t &curve) {
+path_t pathfinding(grid_t &grid, view_t &view, point_t &s, point_t &e, segment_t &curve) {
 
     PQI open;
     int status[grid.size*grid.size];
     for(int i=0; i<grid.size*grid.size; i++)
         status[i] = 0; 
+
+    point_t crv = view2grid(curve.b.x, curve.b.y, view);
+    float_point_t st = grid2view(s.x, s.y, view);
+    float dir = point_is_front(curve, st);
+    dir /= fabs(dir);
 
     static node_t *nodes = NULL;
     if(nodes == NULL)
@@ -102,23 +107,24 @@ path_t pathfinding(grid_t &grid, view_t &view, point_t &s, point_t &e, point_t &
 
         for(int i=0; i< 3; i++) {
             node_t *nbr = &nodes[n_nodes++];
-            viz_line(grid2view(p.x, p.y, view), grid2view(nbr->pos.x, nbr->pos.y, view), RGBA(1,0,0,0.06f), 1);
+            float_point_t nbr_v = grid2view(nbr->pos.x, nbr->pos.y, view);
+            viz_line(grid2view(p.x, p.y, view), nbr_v, RGBA(1,0,0,0.06f), 1);
 
             int val = getgrid(grid, nbr->pos.x, nbr->pos.y);
             if(val == 0 && status[node_id(grid, nbr)] >= 0) {
 
-                if(curve.x >0 && curve.y > 0 && nbr->pos.y > curve.y) {
-                    float dx1 = nbr->pos.x - curve.x;
-                    float dy1 = nbr->pos.y - curve.y;
-                    float dx2 = s.x - curve.x;
-                    float dy2 = s.y - curve.y;
+                if(crv.x >0 && crv.y >0 && point_is_front(curve, nbr_v)*dir > 0) {
+                    float dx1 = nbr->pos.x - crv.x;
+                    float dy1 = nbr->pos.y - crv.y;
+                    float dx2 = s.x - crv.x;
+                    float dy2 = s.y - crv.y;
                     float cross = fabs(dx1*dy2 - dx2*dy1);
                     nbr->cost = cross*0.001;
                 } else {
                     float dx1 = nbr->pos.x - e.x;
                     float dy1 = nbr->pos.y - e.y;
-                    float dx2 = curve.x - e.x;
-                    float dy2 = curve.y - e.y;
+                    float dx2 = crv.x - e.x;
+                    float dy2 = crv.y - e.y;
                     float cross = fabs(dx1*dy2 - dx2*dy1);
                     nbr->cost = cross*0.001;
                 }
@@ -161,8 +167,5 @@ path_t pathfinding(grid_t &grid, view_t &view, point_t &s, point_t &e, point_t &
         }
     }
     
-
-    printf("iter %d, size: %d\n", j, path.size);
-
     return path;
 }

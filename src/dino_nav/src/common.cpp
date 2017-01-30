@@ -9,31 +9,41 @@ float points_angle(float x_part, float y_part, float x_goal, float y_goal) {
     ang = ang*100/45;
  
     return ang;
- }
+}
 
 
- float points_angle_rad(float x_part, float y_part, float x_goal, float y_goal) {
- 
+float points_angle_rad(float x_part, float y_part, float x_goal, float y_goal) {
+
     float ang = atan2(y_goal - y_part, x_goal - x_part);
     return ang;
- }
+}
 
- void rotate_point(float_point_t &p, float_point_t &o, float theta) {
+void rotate_point(float_point_t &p, float_point_t &o, float theta) {
     int x = o.x + (p.x - o.x)*cos(theta) - (p.y - o.y)*sin(theta);
     int y = o.y + (p.y - o.y)*cos(theta) + (p.x - o.x)*sin(theta);
- 
-    p.x = x; p.y = y;
- }
 
- float get_max_value(const float *a, int dim) {
+    p.x = x; p.y = y;
+}
+
+float get_max_value(const float *a, int dim) {
     float max = a[0];
     for(int i=1; i<dim; i++)
         if(a[i] > max) max = a[i];
     return max;
- }
+}
 
- float point_dst(float_point_t &a, float_point_t &b) {
-     float dx = a.x - b.x;
-     float dy = a.y - b.y;
-     return sqrt(dx*dx + dy*dy);
- }
+float point_dst(float_point_t &a, float_point_t &b) {
+    float dx = a.x - b.x;
+    float dy = a.y - b.y;
+    return sqrt(dx*dx + dy*dy);
+}
+
+/*
+    r>0 = FRONT, r<0 = BACK, r == ALINE 
+*/
+float point_is_front(segment_t &s, float_point_t &p){
+ 
+    float r = ((s.b.x - s.a.x)*(p.y - s.a.y) - (s.b.y - s.a.y)*(p.x - s.a.x));
+    return r;
+}
+ 

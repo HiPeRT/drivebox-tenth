@@ -208,11 +208,11 @@ void draw_signal(float_point_t center, float r, dir_e d) {
     viz_triangle(i, a, b, RGBA(0,0,0,1), 0);
 }
 
-point_t calc_curve(grid_t &grid, int gate_idx, view_t &view) {
+segment_t calc_curve(grid_t &grid, int gate_idx, view_t &view) {
     
-    point_t curve;
-    curve.x = -1;
-    curve.y = -1;
+    segment_t curve;
+    curve.a.x = -1; curve.a.y = -1;
+    curve.b.x = -1; curve.b.y = -1;
 
     point_t g1 = grid.gates[gate_idx].s;
     point_t g2 = grid.gates[gate_idx].e;
@@ -305,11 +305,11 @@ point_t calc_curve(grid_t &grid, int gate_idx, view_t &view) {
             break;
     }
     viz_line(int_v, opp_v, PATH_COLOR, 1);
-    
-    float_point_t curve_v;
-    curve_v.x = int_v.x + cos(s_ang)*view.cell_l*(width*track.sects[track.cur_sect].enter);   
-    curve_v.y = int_v.y + sin(s_ang)*view.cell_l*(width*track.sects[track.cur_sect].enter);   
-    curve = view2grid(curve_v.x, curve_v.y, view);
+
+    curve.a.x = int_v.x;
+    curve.a.y = int_v.y;   
+    curve.b.x = int_v.x + cos(s_ang)*view.cell_l*(width*track.sects[track.cur_sect].enter);   
+    curve.b.y = int_v.y + sin(s_ang)*view.cell_l*(width*track.sects[track.cur_sect].enter);   
 
     //reach end wall
     s_ang -= M_PI/2*sign;
@@ -379,8 +379,7 @@ void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
     viz_clear();
 
     //ROS_INFO("Scan recived: [%f]", msg->scan_time);
-    PTIME_INIT()
-    PTIME_START()
+    ros::WallTime time_debug = ros::WallTime::now();
 
     view_t view;
     init_view(view, nav.grid_dim);
@@ -406,7 +405,7 @@ void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
                     grid.gates[gate_idx].e.x, grid.gates[gate_idx].e.y, EMPTY);
     */
     draw_grid(grid, view);   
-    point_t curve = calc_curve(grid, gate_idx, view);
+    segment_t curve = calc_curve(grid, gate_idx, view);
     
     to_x = (grid.gates[gate_idx].s.x + grid.gates[gate_idx].e.x)/2;
     to_y = (grid.gates[gate_idx].s.y + grid.gates[gate_idx].e.y)/2;
@@ -443,6 +442,16 @@ void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
         drive_pub.publish(m);
     }
 
+    double time = (ros::WallTime::now() - time_debug).toSec();
+    #ifndef TIME_PROFILER
+    if(time >= 1/40.0f)
+        printf("iter time exceded: %lf\n", time);
+    #else
+        double start = time_debug.toSec();
+        double end = start + time;
+        printf("DINONAV %lf %lf %lf\n", start, end, time);
+    #endif
+
     //PUB stats for viewer
     dino_nav::Stat stat;
     stat.grid_size = grid.size;
@@ -464,9 +473,6 @@ void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
     stat.speed = estimated_speed;
     stat.pose = pose;
     stat_pub.publish(stat);
-
-    PTIME_END()
-    PTIME_STAMP(,DINONAV)
 
     viz_flip();
 }

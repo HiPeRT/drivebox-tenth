@@ -24,6 +24,6 @@ struct path_t {
     int start;
 };
 
-path_t pathfinding(grid_t &grid, view_t &view, point_t &s, point_t &e, point_t &curve);
+path_t pathfinding(grid_t &grid, view_t &view, point_t &s, point_t &e, segment_t &curve);
 
 #endif //PATHFIND_H
