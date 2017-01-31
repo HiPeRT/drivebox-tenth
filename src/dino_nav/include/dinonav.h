@@ -39,7 +39,7 @@ struct car_t {
  
 enum dir_e { LEFT, RIGHT, UP, DOWN };
 struct sector_t {
-    float l, vel, enter;
+    float l, vel, enter, exit;
     dir_e dir;
 };
 struct track_t {

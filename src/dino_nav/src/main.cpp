@@ -27,6 +27,7 @@ bool load_track(const char *path) {
             
             sect->QueryFloatAttribute("l", &track.sects[i].l);
             sect->QueryFloatAttribute("enter", &track.sects[i].enter);
+            sect->QueryFloatAttribute("exit", &track.sects[i].exit);
             sect->QueryFloatAttribute("vel", &track.sects[i].vel);
 
             if(strcmp(sect->Attribute("dir"), "left") == 0) 
@@ -35,7 +36,8 @@ bool load_track(const char *path) {
                 track.sects[i].dir = RIGHT;
 
             std::cout<<"l: "<<track.sects[i].l<<"\t vel: "<<track.sects[i].vel<<"\t";
-            std::cout<<" ent: "<<track.sects[i].enter<<"\t dir: "<<track.sects[i].dir;
+            std::cout<<" ent: "<<track.sects[i].enter<<"\t exit: "<<track.sects[i].exit;
+            std::cout<<"\t dir: "<<track.sects[i].dir;
             std::cout<<"\n";
             sect = sect->NextSiblingElement();
             i++;

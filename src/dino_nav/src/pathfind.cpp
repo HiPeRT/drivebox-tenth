@@ -76,6 +76,11 @@ path_t pathfinding(grid_t &grid, view_t &view, point_t &s, point_t &e, segment_t
         status[i] = 0; 
 
     point_t crv = view2grid(curve.b.x, curve.b.y, view);
+    if(crv.x > grid.size || crv.y > grid.size) {
+        crv.x = -1;
+        crv.y = -1;
+    }
+
     float_point_t st = grid2view(s.x, s.y, view);
     float dir = point_is_front(curve, st);
     dir /= fabs(dir);
@@ -113,18 +118,27 @@ path_t pathfinding(grid_t &grid, view_t &view, point_t &s, point_t &e, segment_t
             int val = getgrid(grid, nbr->pos.x, nbr->pos.y);
             if(val == 0 && status[node_id(grid, nbr)] >= 0) {
 
-                if(crv.x >0 && crv.y >0 && point_is_front(curve, nbr_v)*dir > 0) {
-                    float dx1 = nbr->pos.x - crv.x;
-                    float dy1 = nbr->pos.y - crv.y;
-                    float dx2 = s.x - crv.x;
-                    float dy2 = s.y - crv.y;
-                    float cross = fabs(dx1*dy2 - dx2*dy1);
-                    nbr->cost = cross*0.001;
+                if(crv.x >0 && crv.y >0) {
+                    if(point_is_front(curve, nbr_v)*dir > 0) {
+                        float dx1 = nbr->pos.x - crv.x;
+                        float dy1 = nbr->pos.y - crv.y;
+                        float dx2 = s.x - crv.x;
+                        float dy2 = s.y - crv.y;
+                        float cross = fabs(dx1*dy2 - dx2*dy1);
+                        nbr->cost = cross*0.001;
+                    } else {
+                        float dx1 = nbr->pos.x - e.x;
+                        float dy1 = nbr->pos.y - e.y;
+                        float dx2 = crv.x - e.x;
+                        float dy2 = crv.y - e.y;
+                        float cross = fabs(dx1*dy2 - dx2*dy1);
+                        nbr->cost = cross*0.001;
+                    }
                 } else {
                     float dx1 = nbr->pos.x - e.x;
                     float dy1 = nbr->pos.y - e.y;
-                    float dx2 = crv.x - e.x;
-                    float dy2 = crv.y - e.y;
+                    float dx2 = s.x - e.x;
+                    float dy2 = s.y - e.y;
                     float cross = fabs(dx1*dy2 - dx2*dy1);
                     nbr->cost = cross*0.001;
                 }

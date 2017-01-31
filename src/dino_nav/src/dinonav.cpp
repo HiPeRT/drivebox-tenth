@@ -125,6 +125,11 @@ void init_car(car_t &car, view_t &view, float zoom) {
     float mul = (view.l/100);
     car.length = (18.0f/zoom)*mul;     
     car.width  = (10.0f/zoom)*mul;
+    
+    float_point_t o;
+    o.x = view.x + view.cell_l/2 + view.l/2 - car.width/2;
+    o.y = view.y + view.l - car.length;
+    viz_rect(o, car.width, car.length, CAR_COLOR,1);
 }
 
 
@@ -208,7 +213,7 @@ void draw_signal(float_point_t center, float r, dir_e d) {
     viz_triangle(i, a, b, RGBA(0,0,0,1), 0);
 }
 
-segment_t calc_curve(grid_t &grid, int gate_idx, view_t &view) {
+segment_t calc_curve(grid_t &grid, int gate_idx, view_t &view, car_t &car) {
     
     segment_t curve;
     curve.a.x = -1; curve.a.y = -1;
@@ -308,8 +313,8 @@ segment_t calc_curve(grid_t &grid, int gate_idx, view_t &view) {
 
     curve.a.x = int_v.x;
     curve.a.y = int_v.y;   
-    curve.b.x = int_v.x + cos(s_ang)*view.cell_l*(width*track.sects[track.cur_sect].enter);   
-    curve.b.y = int_v.y + sin(s_ang)*view.cell_l*(width*track.sects[track.cur_sect].enter);   
+    curve.b.x = int_v.x + cos(s_ang)*(car.width*track.sects[track.cur_sect].enter);   
+    curve.b.y = int_v.y + sin(s_ang)*(car.width*track.sects[track.cur_sect].enter);   
 
     //reach end wall
     s_ang -= M_PI/2*sign;
@@ -405,11 +410,11 @@ void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
                     grid.gates[gate_idx].e.x, grid.gates[gate_idx].e.y, EMPTY);
     */
     draw_grid(grid, view);   
-    segment_t curve = calc_curve(grid, gate_idx, view);
+    segment_t curve = calc_curve(grid, gate_idx, view, car);
     
     to_x = (grid.gates[gate_idx].s.x + grid.gates[gate_idx].e.x)/2;
     to_y = (grid.gates[gate_idx].s.y + grid.gates[gate_idx].e.y)/2;
-
+    
     draw_yaw(view); 
     draw_track(track, view);
 
@@ -424,6 +429,18 @@ void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
     for(int i=1; i< path.size; i++) {
         viz_circle(path.data[i], 2, PATH_COLOR, 1.0f);
         //viz_line(path.data[i-1], path.data[i], PATH_COLOR, 1);
+    }
+
+    float_point_t start = grid2view(part.x, part.y, view);
+    float_point_t enter = curve.b;
+    float_point_t exit = grid2view(goal.x, goal.y, view);
+    if(curve.b.x >0) {
+        viz_circle(enter, 4, CAR_COLOR, 1);
+        viz_circle(exit, 4, CAR_COLOR, 1);
+        viz_line(start, enter, CAR_COLOR, 1);
+        viz_line(enter, exit, CAR_COLOR, 1);
+    } else {
+        viz_circle(exit, 4, CAR_COLOR, 1);
     }
 
     float_point_t steer_p = grid2view(part.x, part.y, view); 
