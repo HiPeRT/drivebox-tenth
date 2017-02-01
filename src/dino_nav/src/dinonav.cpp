@@ -326,6 +326,9 @@ segment_t calc_curve(grid_t &grid, int gate_idx, view_t &view, car_t &car) {
     }
     viz_line(int_v, l_v, PATH_COLOR, 1);
 
+    curve.b.x += cos(s_ang + M_PI)*car.width*2;   
+    curve.b.y += sin(s_ang + M_PI)*car.width*2; 
+
     //sign on the center of curve
     float_point_t center;
     center.x = (opp_v.x + l_v.x)/2;
@@ -451,7 +454,7 @@ void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
 
     static float throttle = 0;
     float curve_speed = 2.0f;
-    if(curve_dst >0 && curve_dst < 100*estimated_speed) {
+    if(curve_dst >0 && curve_dst < 80*estimated_speed) {
         if(estimated_speed > curve_speed + 0.5f)
             throttle -= 10;
         else if(estimated_speed > curve_speed)
