@@ -78,7 +78,7 @@ int main(int argc, char **argv) {
         return -1;
 
     viz_init();
-    while(viz_update()) {
+    while(ros::ok() && viz_update()) {
         ros::spinOnce();
     }
 

@@ -67,4 +67,11 @@ if(TIME_PROFILER)
   message(WARNING "TIME_PROFILER ENABLED")
 endif()
 
+option(VIZ "enable viz" ON)
+
+if(NOT VIZ)
+  add_definitions(-DNOVIZ)
+  message(WARNING "VIZ NOT ENABLED")
+endif()
+
 catkin_workspace()

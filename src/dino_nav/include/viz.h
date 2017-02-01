@@ -1,9 +1,14 @@
 #ifndef VIZ_H
 #define VIZ_H
 
+#ifdef NOVIZ
+    #include "dummyviz.h"
+#else
+
 #include <allegro5/allegro.h>
 #include "common.h"
 #include "dinonav.h"
+#include "grid.h"
 
 #define RGBA(r, g, b, a)  al_map_rgba_f(r*a,g*a,b*a, a)
 
@@ -36,7 +41,9 @@ void viz_text(float x, float y, int dim, ALLEGRO_COLOR col, const char *format, 
 float_point_t viz_mouse();
 
 void draw_drive_params(view_t &view, float throttle, float steer, float speed);
+void draw_grid(grid_t &grid, view_t &view);
 
+#endif //NOVIZ
 
 #endif //VIZ_H
 

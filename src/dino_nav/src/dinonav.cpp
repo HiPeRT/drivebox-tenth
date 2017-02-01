@@ -158,36 +158,6 @@ void draw_track(track_t &track, view_t &view) {
 
 }
 
-void draw_grid(grid_t &grid, view_t &view) {
-    
-    float_point_t p; p.x = view.x; p.y = view.y;
-    viz_rect(p, view.l, view.l, VIEW_COLOR, 1);
-    for(int i=0; i<grid.size; i++) { 
-        for(int j=0; j<grid.size; j++) {
-            int val = grid.data[i*grid.size +j];
-            ALLEGRO_COLOR col;
-
-            if (val == WALL) {
-                col = WALL_COLOR;
-            } else if(val == INFLATED) {
-                col = INFLATED_COLOR;  
-            } else if(val == GATE) {
-                col = GATE_COLOR;  
-            } else {
-                continue;
-            }
-            float_point_t p;
-            p.x = view.x + j*view.cell_l;
-            p.y = view.y + i*view.cell_l;
-            viz_rect(p, view.cell_l, view.cell_l, col, 0);
-        }
-    }
-
-    p.x = view.x + grid.points[grid.middle_id].x*view.cell_l;
-    p.y = view.y + grid.points[grid.middle_id].y*view.cell_l;
-    viz_rect(p, view.cell_l, view.cell_l, PATH_COLOR, 0);
-}
-
 void draw_signal(float_point_t center, float r, dir_e d) {
 
     viz_circle(center, r, RGBA(1,1,1,1), 0);
