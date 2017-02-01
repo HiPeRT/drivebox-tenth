@@ -455,16 +455,16 @@ void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
     static float throttle = 0;
     float curve_speed = 2.0f;
     if(curve_dst >0 && curve_dst < 80*estimated_speed) {
-        if(estimated_speed > curve_speed + 0.5f)
+        if(estimated_speed > curve_speed + 0.8f)
             throttle -= 10;
-        else if(estimated_speed > curve_speed)
+        else if(estimated_speed > curve_speed + 0.2f)
             throttle -= 2;
         else if(estimated_speed < curve_speed - 0.5f)
             throttle += 2;
         else
             throttle=0;
     } else {
-        throttle += 5;
+        throttle += 2;
     }
     if(throttle > 100)  throttle = 100;
     if(throttle < -100) throttle = -100;
