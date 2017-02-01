@@ -450,12 +450,14 @@ void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
     viz_line(steer_p, path.data[path.start], VIEW_COLOR, 2);
 
     static float throttle = 0;
-    float curve_speed = 2.5f;
+    float curve_speed = 2.0f;
     if(curve_dst >0 && curve_dst < 100*estimated_speed) {
-        if(estimated_speed > curve_speed)
+        if(estimated_speed > curve_speed + 0.5f)
             throttle -= 10;
+        else if(estimated_speed > curve_speed)
+            throttle -= 2;
         else if(estimated_speed < curve_speed - 0.5f)
-            throttle += 1;
+            throttle += 2;
         else
             throttle=0;
     } else {
