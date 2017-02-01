@@ -15,6 +15,7 @@ const ALLEGRO_COLOR GATE_COLOR      = RGBA(1, 1, 1, 0.2);
 const ALLEGRO_COLOR PATH_COLOR      = RGBA(1, 0, 0, 1.0);
 const ALLEGRO_COLOR PATH_GRID_COLOR = RGBA(1, 0, 1, 0.2);
 const ALLEGRO_COLOR CAR_COLOR       = RGBA(0, 1, 1, 1.0);
+const ALLEGRO_COLOR LPATH_COLOR     = RGBA(0, 1, 1, 0.05);
 
 bool viz_init();
 bool viz_update();

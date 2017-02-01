@@ -449,9 +449,6 @@ void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
         viz_circle(exit, 4, CAR_COLOR, 1);
     }
 
-    float_point_t steer_p = grid2view(part.x, part.y, view); 
-    viz_line(steer_p, path.data[path.start], VIEW_COLOR, 2);
-
     static float throttle = 0;
     float curve_speed = 2.0f;
     if(curve_dst >0 && curve_dst < 80*estimated_speed) {
@@ -470,9 +467,58 @@ void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
     if(throttle < -100) throttle = -100;
 
 
-    float steer = points_angle(steer_p.x, steer_p.y, path.data[path.start].x, path.data[path.start].y);
-    if(steer > 100) steer = 100;
-    if(steer < -100) steer = -100;
+    float steer = 0;
+    {
+        for(int i=0; i<path.size; i++) {
+            point_t p = view2grid(path.data[i].x, path.data[i].y, view);
+            setgrid(grid, p.x, p.y, 44);
+        }
+
+        int best_steer = 0;
+        int best_dist = 0;
+        for(int j=-100; j<100; j+=2) {
+            float_point_t p = start;
+            float ang = -M_PI/2;
+
+            float_point_t p0 = p;
+            for(int i=0; i<20; i++) {
+                float steer_ang = ((float) j) /100.0 * M_PI/4; 
+
+                p.x = p.x + cos(ang + steer_ang)*view.cell_l;
+                p.y = p.y + sin(ang + steer_ang)*view.cell_l;
+                ang = ang + (view.cell_l/car.length) * tan(steer_ang);
+                
+                viz_line(p, p0, LPATH_COLOR, 1);
+                point_t gp = view2grid(p.x, p.y, view);
+                int val = getgrid(grid, gp.x, gp.y);
+                if(val == 44) {
+                    viz_circle(p, 5, LPATH_COLOR, 1);
+                    if(i > best_dist) {
+                        best_steer = j;
+                        best_dist = i;
+                    }
+                } else if(val != EMPTY)
+                    break;
+                p0 = p;
+            }
+        }
+
+        float_point_t p = start;
+        float ang = -M_PI/2;
+
+        float_point_t p0 = p;
+        for(int i=0; i<best_dist; i++) {
+            float steer_ang = ((float) best_steer) /100.0 * M_PI/4; 
+
+            p.x = p.x + cos(ang + steer_ang)*view.cell_l;
+            p.y = p.y + sin(ang + steer_ang)*view.cell_l;
+            ang = ang + (view.cell_l/car.length) * tan(steer_ang);
+            viz_line(p, p0, VIEW_COLOR, 2);
+            p0 = p;
+        }
+
+        steer = best_steer;
+    }
 
     if(nav.enable) {
         race::drive_param m;
