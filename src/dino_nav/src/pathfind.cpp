@@ -68,7 +68,7 @@ class PQI : public std::priority_queue<node_t*, std::vector<node_t*>, node_comp>
         std::vector<node_t*>& impl() { return c; }
 };
 
-path_t pathfinding(grid_t &grid, view_t &view, point_t &s, point_t &e, segment_t &curve) {
+path_t pathfinding(grid_t &grid, view_t &view, car_t &car, point_t &s, point_t &e, segment_t &curve) {
 
     PQI open;
     int status[grid.size*grid.size];
@@ -141,8 +141,9 @@ path_t pathfinding(grid_t &grid, view_t &view, point_t &s, point_t &e, segment_t
                     float dy2 = s.y - e.y;
                     float cross = fabs(dx1*dy2 - dx2*dy1);
                     nbr->cost = cross*0.001;
+                    //nbr->cost += fabs(points_angle(s.x, s.y, nbr->pos.x, nbr->pos.y));
                 }
-                   
+
                 int stat = status[node_id(grid, nbr)];
                 if(stat == 0) {
                     open.push(nbr);
@@ -170,6 +171,44 @@ path_t pathfinding(grid_t &grid, view_t &view, point_t &s, point_t &e, segment_t
     path.start = path.size - 18;
     if(path.start < 0)
         path.start = 0;
+
+
+    //expand path
+    for(int i=path.size-1; i>=1; i--) {
+
+        int v = i - (path.size - path.start);
+        if(v < 0) v=0;
+            
+        float_point_t fp = path.data[i];
+        float_point_t fp1 = path.data[i-1];
+        float ang  = points_angle_rad(fp.x, fp.y, fp1.x, fp1.y) - M_PI;
+
+        float cw = car.width;
+
+        int lv, rv;
+        float_point_t left, right;
+        for(int j=0; j<cw/view.cell_l; j++) {
+            left.x  = fp.x + cos(ang + M_PI/2)*cw;   left.y  = fp.y + sin(ang + M_PI/2)*cw;
+            right.x = fp.x + cos(ang - M_PI/2)*cw;   right.y = fp.y + sin(ang - M_PI/2)*cw;
+        
+            point_t lg = view2grid(left.x, left.y, view);
+            point_t rg = view2grid(right.x, right.y, view);
+            lv = getgrid(grid, lg.x, lg.y);
+            rv = getgrid(grid, rg.x, rg.y);
+
+            if(lv != EMPTY && rv == EMPTY) {
+                fp.x += cos(ang - M_PI/2)*view.cell_l;
+                fp.y += sin(ang - M_PI/2)*view.cell_l;
+            
+            } else if (lv == EMPTY && rv != EMPTY) {
+                fp.x += cos(ang + M_PI/2)*view.cell_l;
+                fp.y += sin(ang + M_PI/2)*view.cell_l; 
+            
+            } 
+        }
+
+        path.data[i] = fp;
+    }
 
     //shortcuts path
     for(int i=path.start; i<path.size-2; i++) {

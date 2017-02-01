@@ -21,7 +21,7 @@ bool viz_init() {
         return false;
     }
 
-    display = al_create_display(840, 600);
+    display = al_create_display(800, 800);
     if(!display) {
         printf("failed to create display!\n");
         return false;
@@ -144,4 +144,94 @@ void viz_clear() {
 
 void viz_flip() {
     al_flip_display();
+}
+
+void draw_rotated_rectangle(float_point_t o, float w, float h, float angle, ALLEGRO_COLOR col) {
+
+    float_point_t A, B, C, D;
+    /*
+        A -- B
+        |    |
+        D -- C
+    */
+    A.x = o.x - w/2; A.y = o.y - h/2;
+    B.x = o.x + w/2; B.y = o.y - h/2;
+    C.x = o.x + w/2; C.y = o.y + h/2;
+    D.x = o.x - w/2; D.y = o.y + h/2;
+
+    rotate_point(A, o, angle);
+    rotate_point(B, o, angle);
+    rotate_point(C, o, angle);
+    rotate_point(D, o, angle);
+
+    al_draw_line(A.x, A.y, B.x, B.y, col, 1);
+    al_draw_line(B.x, B.y, C.x, C.y, col, 1);
+    al_draw_line(C.x, C.y, D.x, D.y, col, 1);
+    al_draw_line(D.x, D.y, A.x, A.y, col, 1);
+}
+
+void draw_drive_params(view_t &view, float throttle, float steer, float speed) {
+
+    float_point_t origin;
+    origin.x = view.x;
+    origin.y = view.y + view.l + 10; 
+
+    float t_height = 80;
+    float t_width  = 10;
+
+    //throttle
+    ALLEGRO_COLOR t_col = al_map_rgba_f(0, 0, 0, 1);
+    float t_value = (throttle /100) * (t_height/2);
+    if(t_value < 0)
+        t_col.r = 1.0f;
+    else    
+        t_col.g = 1.0f;
+
+    al_draw_filled_rectangle(origin.x, origin.y + t_height/2, origin.x + t_width, origin.y + t_height/2 - t_value, t_col);
+    al_draw_rectangle(origin.x, origin.y, origin.x + t_width, origin.y + t_height, VIEW_COLOR, 1);
+
+
+    //steer
+    origin.x += t_width + 10;
+    float w_height = t_height/2;
+    float w_width = t_width;
+
+    float_point_t weel1o, weel2o;
+    weel1o.x = origin.x + w_width/2 + 15;
+    weel1o.y = origin.y + w_height/2;
+    weel2o.x = weel1o.x + 80;
+    weel2o.y = weel1o.y;
+    
+    float s_value = (steer/100) * M_PI/4;
+    al_draw_line(weel1o.x, weel1o.y, weel2o.x, weel2o.y, VIEW_COLOR, 1);
+    draw_rotated_rectangle(weel1o, w_width, w_height, s_value, VIEW_COLOR);
+    draw_rotated_rectangle(weel2o, w_width, w_height, s_value, VIEW_COLOR);
+
+    al_draw_textf(font[10], VIEW_COLOR, origin.x, origin.y + w_height +5, 0,  "throttle: %4.0f", throttle);
+    al_draw_textf(font[10], VIEW_COLOR, origin.x, origin.y + w_height +25, 0, "steer:    %4.0f", steer);
+
+
+    //speed
+    static float smooth_speed =0;
+    float lerp = 0.02;
+    if(fabs(smooth_speed - speed) > lerp)
+        smooth_speed < speed ? smooth_speed += lerp : smooth_speed -= lerp;
+
+    origin.x = weel2o.x + w_height;
+    float_point_t tacho, tach;
+    tacho.x = origin.x + t_height/2;
+    tacho.y = origin.y + t_height/2;
+    tach.x = origin.x + t_height -5;
+    tach.y = origin.y + t_height/2;
+
+    float tach_start = M_PI/2 + M_PI/4, tach_ang = M_PI + M_PI/4;
+    
+    float v_value = tach_start + (smooth_speed/5 * tach_ang);
+    rotate_point(tach, tacho, v_value);
+
+    al_draw_line(tacho.x, tacho.y, tach.x, tach.y, VIEW_COLOR, 1);
+    al_draw_circle(tacho.x, tacho.y, 2, VIEW_COLOR, 1);
+    al_draw_arc(tacho.x, tacho.y, t_height/2, tach_start, tach_ang, VIEW_COLOR, 1);
+
+    al_draw_textf(font[10], VIEW_COLOR, origin.x + t_height/2, origin.y + w_height +25, 0, "%2.1f m/s", speed);
 }

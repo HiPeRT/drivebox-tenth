@@ -342,7 +342,7 @@ segment_t calc_curve(grid_t &grid, int gate_idx, view_t &view, car_t &car) {
         time++;
     if(!start && opp_v.y > view.y + view. l && int_v.y > view.y + view. l)
         start = true;
-    if(start && time >= 40 && opp_v.y < view.y + view. l && opp_v.y < view.y + view. l) {
+    if(start && time >= 30 && opp_v.y < view.y + view. l && opp_v.y < view.y + view. l) {
         track.cur_sect = (track.cur_sect +1) % track.sects_n;
         time = 0;
         start = false;
@@ -424,7 +424,7 @@ void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
     goal.x = to_x;  goal.y = to_y;
     setgrid(grid, goal.x, goal.y, 0);
 
-    path_t path = pathfinding(grid, view, part, goal, curve);
+    path_t path = pathfinding(grid, view, car, part, goal, curve);
 
     for(int i=1; i< path.size; i++) {
         viz_circle(path.data[i], 2, PATH_COLOR, 1.0f);
@@ -434,11 +434,14 @@ void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
     float_point_t start = grid2view(part.x, part.y, view);
     float_point_t enter = curve.b;
     float_point_t exit = grid2view(goal.x, goal.y, view);
+    float curve_dst = -1;
     if(curve.b.x >0) {
         viz_circle(enter, 4, CAR_COLOR, 1);
         viz_circle(exit, 4, CAR_COLOR, 1);
         viz_line(start, enter, CAR_COLOR, 1);
         viz_line(enter, exit, CAR_COLOR, 1);
+        curve_dst = point_dst(start, enter);
+        viz_text((start.x + enter.x)/2, (start.y + enter.y)/2, 10, RGBA(1,0,1,1), "  %f", curve_dst);
     } else {
         viz_circle(exit, 4, CAR_COLOR, 1);
     }
@@ -446,7 +449,22 @@ void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
     float_point_t steer_p = grid2view(part.x, part.y, view); 
     viz_line(steer_p, path.data[path.start], VIEW_COLOR, 2);
 
-    float throttle = 20;
+    static float throttle = 0;
+    float curve_speed = 2.5f;
+    if(curve_dst >0 && curve_dst < 100*estimated_speed) {
+        if(estimated_speed > curve_speed)
+            throttle -= 10;
+        else if(estimated_speed < curve_speed - 0.5f)
+            throttle += 1;
+        else
+            throttle=0;
+    } else {
+        throttle += 5;
+    }
+    if(throttle > 100)  throttle = 100;
+    if(throttle < -100) throttle = -100;
+
+
     float steer = points_angle(steer_p.x, steer_p.y, path.data[path.start].x, path.data[path.start].y);
     if(steer > 100) steer = 100;
     if(steer < -100) steer = -100;
@@ -468,6 +486,8 @@ void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
         double end = start + time;
         printf("DINONAV %lf %lf %lf\n", start, end, time);
     #endif
+
+    draw_drive_params(view, throttle, steer, estimated_speed);
 
     //PUB stats for viewer
     dino_nav::Stat stat;
