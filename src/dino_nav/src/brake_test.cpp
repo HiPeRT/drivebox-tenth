@@ -14,27 +14,38 @@ ros::Publisher drive_pub;
 
 float mean_ray(std::vector<float> v, int idx, int l) {
     float sum = 0;
+    
     for(int i=idx-l; i<=idx+l; i++)
         sum += v[i];
-    return sum/(idx*2+1);
+    return sum/(l*2+1);
 }
 
 void run_test(float &throttle, float &steer, float wall_dist, vquad_t &view) {
 
-    const float start_dist = 10;
+    const float start_dist = 6;
     const float min_dist = 3;
 
     static state_e state = PREPARE;
     static int test = 0; 
 
-    float speed = 0;
+    static float old_dist = wall_dist;
+    static float speed = 0;
+    viz_text(view.x + view.l + 20, view.y +100, 20, VIEW_COLOR, "speed: %f", speed);
+    
+    const int N = 5;
+    static int n = 0;
+    if(n%N == 0) {
+        speed = (old_dist - wall_dist) / (0.025*N);
+        old_dist = wall_dist;
+    }
+    n++;
 
     switch(state) {
 
     case PREPARE:
-        viz_text(view.x + view.l + 20, view.y +120, 15, VIEW_COLOR, "PREPARE");
+        viz_text(view.x + view.l + 20, view.y +140, 15, VIEW_COLOR, "PREPARE");
         if(wall_dist < start_dist) {
-            throttle = -10;
+            throttle = -20;
             steer = -steer;
         } else {
             state = START;
@@ -42,7 +53,7 @@ void run_test(float &throttle, float &steer, float wall_dist, vquad_t &view) {
         break;
 
     case START:
-        viz_text(view.x + view.l + 20, view.y +120, 15, VIEW_COLOR, "PREPARE -> START");
+        viz_text(view.x + view.l + 20, view.y +140, 15, VIEW_COLOR, "PREPARE -> START");
         if(wall_dist > min_dist)
             throttle = 50;
         else
@@ -50,9 +61,9 @@ void run_test(float &throttle, float &steer, float wall_dist, vquad_t &view) {
         break;
 
     case BREAK:
-        viz_text(view.x + view.l + 20, view.y +120, 15, VIEW_COLOR, "PREPARE -> START -> BREAK");
+        viz_text(view.x + view.l + 20, view.y +140, 15, VIEW_COLOR, "PREPARE -> START -> BREAK");
         if(speed > 0)
-            throttle = -50;
+            throttle = -100;
         else
             state = PREPARE;
         break;
@@ -69,14 +80,14 @@ void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
     view.l = 400;
 
     int size = msg->ranges.size();
-    float front_ray = mean_ray(msg->ranges, size/2, 2);
+    float orig_front_ray = mean_ray(msg->ranges, size/2, 2);
     int ray_wideness = 40;
 
     float left_ray = mean_ray(msg->ranges, size/2 + ray_wideness, 2);
     float right_ray = mean_ray(msg->ranges, size/2 - ray_wideness, 2);
 
     float view_convert = view.l/10;
-    front_ray = front_ray*view_convert;
+    float front_ray = orig_front_ray*view_convert;
     left_ray = left_ray*view_convert;
     right_ray = right_ray*view_convert;
 
@@ -114,7 +125,7 @@ void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
     viz_line(car_p, right_hit, CAR_COLOR, 1);
 
     float angle = dira + M_PI/2;
-    float wall_dist = (car_p.y - view.y)/view_convert;
+    float wall_dist = orig_front_ray;
     viz_text(view.x + view.l + 20, view.y +20, 20, VIEW_COLOR, "wall angle: %f", angle);
     viz_text(view.x + view.l + 20, view.y +40, 20, VIEW_COLOR, "wall dist: %f mt.", wall_dist);
 
