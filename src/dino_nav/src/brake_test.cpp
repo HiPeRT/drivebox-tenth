@@ -8,8 +8,57 @@ struct vquad_t {
     float x, y, l;
 };
 
+enum state_e { PREPARE, START, BREAK };
+
 ros::Publisher drive_pub;
 
+float mean_ray(std::vector<float> v, int idx, int l) {
+    float sum = 0;
+    for(int i=idx-l; i<=idx+l; i++)
+        sum += v[i];
+    return sum/(idx*2+1);
+}
+
+void run_test(float &throttle, float &steer, float wall_dist, vquad_t &view) {
+
+    const float start_dist = 10;
+    const float min_dist = 3;
+
+    static state_e state = PREPARE;
+    static int test = 0; 
+
+    float speed = 0;
+
+    switch(state) {
+
+    case PREPARE:
+        viz_text(view.x + view.l + 20, view.y +120, 15, VIEW_COLOR, "PREPARE");
+        if(wall_dist < start_dist) {
+            throttle = -10;
+            steer = -steer;
+        } else {
+            state = START;
+        }
+        break;
+
+    case START:
+        viz_text(view.x + view.l + 20, view.y +120, 15, VIEW_COLOR, "PREPARE -> START");
+        if(wall_dist > min_dist)
+            throttle = 50;
+        else
+            state = BREAK;
+        break;
+
+    case BREAK:
+        viz_text(view.x + view.l + 20, view.y +120, 15, VIEW_COLOR, "PREPARE -> START -> BREAK");
+        if(speed > 0)
+            throttle = -50;
+        else
+            state = PREPARE;
+        break;
+    }
+
+}
 
 void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
      
@@ -20,14 +69,11 @@ void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
     view.l = 400;
 
     int size = msg->ranges.size();
-    int idx = size/2;
-    float front_ray = (msg->ranges[idx] + msg->ranges[idx-1] + msg->ranges[idx+1])/3;
+    float front_ray = mean_ray(msg->ranges, size/2, 2);
     int ray_wideness = 40;
 
-    idx = size/2 + ray_wideness;
-    float left_ray = (msg->ranges[idx] + msg->ranges[idx-1] + msg->ranges[idx+1])/3;
-    idx = size/2 - ray_wideness;
-    float right_ray = (msg->ranges[idx] + msg->ranges[idx-1] + msg->ranges[idx+1])/3;
+    float left_ray = mean_ray(msg->ranges, size/2 + ray_wideness, 2);
+    float right_ray = mean_ray(msg->ranges, size/2 - ray_wideness, 2);
 
     float view_convert = view.l/10;
     front_ray = front_ray*view_convert;
@@ -72,19 +118,18 @@ void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
     viz_text(view.x + view.l + 20, view.y +20, 20, VIEW_COLOR, "wall angle: %f", angle);
     viz_text(view.x + view.l + 20, view.y +40, 20, VIEW_COLOR, "wall dist: %f mt.", wall_dist);
 
+    float throttle = 0;
+    float steer = points_angle(car_p.x, car_p.y, wall_middle.x, wall_middle.y);
+    steer != steer ? steer = 0 : steer = -fclamp(steer, -100, 100);
+
+    run_test(throttle, steer, wall_dist, view);
+
+    viz_text(view.x + view.l + 20, view.y +60, 20, VIEW_COLOR, "steer: %f", steer);
+    viz_text(view.x + view.l + 20, view.y +80, 20, VIEW_COLOR, "throttle: %f", throttle);
+
     race::drive_param m;
-
-    m.velocity = 0;
-    m.angle = points_angle(car_p.x, car_p.y, wall_middle.x, wall_middle.y);
-    if(m.angle >100)
-        m.angle = 100;
-    if(m.angle <-100)
-        m.angle = -100;
-    if(m.angle != m.angle)
-        m.angle = 0;
-    m.angle = -m.angle;
-    viz_text(view.x + view.l + 20, view.y +60, 20, VIEW_COLOR, "steer: %f", m.angle);
-
+    m.velocity = throttle;
+    m.angle = steer;
     drive_pub.publish(m);
 
     viz_flip();

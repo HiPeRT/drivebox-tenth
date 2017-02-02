@@ -21,4 +21,6 @@ float get_max_value(const float *a, int dim);
 float point_dst(float_point_t &a, float_point_t &b);
 
 float point_is_front(segment_t &s, float_point_t &p);
+float fclamp(float val, float min, float max);
+
 #endif //COMMON_H

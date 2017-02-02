@@ -47,3 +47,8 @@ float point_is_front(segment_t &s, float_point_t &p){
     return r;
 }
  
+float fclamp(float val, float min, float max) {
+    if(val > max) return max;
+    else if(val < min) return min;
+    else return val;
+}
