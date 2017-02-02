@@ -23,7 +23,7 @@ bool viz_init() {
         return false;
     }
 
-    display = al_create_display(800, 800);
+    display = al_create_display(700, 700);
     if(!display) {
         printf("failed to create display!\n");
         return false;
