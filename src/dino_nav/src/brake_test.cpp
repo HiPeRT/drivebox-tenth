@@ -28,9 +28,11 @@ void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
     float left_ray = (msg->ranges[idx] + msg->ranges[idx-1] + msg->ranges[idx+1])/3;
     idx = size/2 - ray_wideness;
     float right_ray = (msg->ranges[idx] + msg->ranges[idx-1] + msg->ranges[idx+1])/3;
-    front_ray = front_ray*view.l/10;
-    left_ray = left_ray*view.l/10;
-    right_ray = right_ray*view.l/10;
+
+    float view_convert = view.l/10;
+    front_ray = front_ray*view_convert;
+    left_ray = left_ray*view_convert;
+    right_ray = right_ray*view_convert;
 
     float_point_t wall_a, wall_b;
     wall_a.x = view.x;          wall_a.y = view.y;
@@ -66,8 +68,9 @@ void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
     viz_line(car_p, right_hit, CAR_COLOR, 1);
 
     float angle = dira + M_PI/2;
+    float wall_dist = (car_p.y - view.y)/view_convert;
     viz_text(view.x + view.l + 20, view.y +20, 20, VIEW_COLOR, "wall angle: %f", angle);
-    viz_text(view.x + view.l + 20, view.y +40, 20, VIEW_COLOR, "wall dist: %f", car_p.y - view.y);
+    viz_text(view.x + view.l + 20, view.y +40, 20, VIEW_COLOR, "wall dist: %f mt.", wall_dist);
 
     race::drive_param m;
 
