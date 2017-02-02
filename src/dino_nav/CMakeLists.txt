@@ -43,6 +43,11 @@ add_definitions("-std=c++11")
 add_executable(dinonav src/main.cpp src/viz.cpp src/dinonav.cpp src/pathfind.cpp src/common.cpp src/grid.cpp)
 target_link_libraries(dinonav  ${catkin_LIBRARIES} ${ALLEGRO5_LIBRARIES} ${ALLEGRO_PRIMITIVES_LIBRARIES}
                                ${ALLEGRO_TTF_LIBRARIES} ${TinyXML_LIBRARIES})
+
+add_executable(brake_test src/brake_test.cpp src/viz.cpp src/common.cpp)
+target_link_libraries(brake_test  ${catkin_LIBRARIES} ${ALLEGRO5_LIBRARIES} ${ALLEGRO_PRIMITIVES_LIBRARIES}
+                                  ${ALLEGRO_TTF_LIBRARIES})
+
 # make sure configure headers are built before any node using them
 add_dependencies(dinonav ${PROJECT_NAME}_gencfg)
 

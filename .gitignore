@@ -6,3 +6,4 @@ src/.idea
 *.pyc
 \#*\#
 *~
+.vscode/
