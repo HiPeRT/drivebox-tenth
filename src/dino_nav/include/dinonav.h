@@ -53,6 +53,7 @@ struct track_t {
 struct vels_t {
     ros::Time t;
     float_point_t pos;
+    float vel;
 };
 
 void reconf(dino_nav::DinonavConfig &config, uint32_t level);

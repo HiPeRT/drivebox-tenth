@@ -51,6 +51,7 @@ track_t track;
 
 geometry_msgs::Pose pose;
 float estimated_speed;
+float estimated_acc;
 double yaw = 0;
 
 void reconf(dino_nav::DinonavConfig &config, uint32_t level) {
@@ -290,11 +291,12 @@ segment_t calc_curve(grid_t &grid, int gate_idx, view_t &view, car_t &car) {
     }
     viz_line(int_v, l_v, PATH_COLOR, 1);
 
-    //anticipate break
+    /*anticipate brake
     if(estimated_speed > 1) {
         curve.b.x += cos(s_ang + M_PI)*car.width*(estimated_speed-1);   
         curve.b.y += sin(s_ang + M_PI)*car.width*(estimated_speed-1); 
-    }
+    }*/
+
     //sign on the center of curve
     float_point_t center;
     center.x = (opp_v.x + l_v.x)/2;
@@ -494,8 +496,8 @@ void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
 
     if(nav.enable) {
         race::drive_param m;
-        if(throttle > 15)
-            throttle = 15;
+        if(throttle > nav.speed)
+            throttle = nav.speed;
 
         m.velocity = throttle;
         m.angle = steer;
@@ -546,6 +548,7 @@ void update_speed(geometry_msgs::Point p, ros::Time time) {
             vels[i].t = time;
             vels[i].pos.x = 0;
             vels[i].pos.y = 0; 
+	    vels[i].vel = 0;
         }
         init = true;
     }
@@ -566,7 +569,10 @@ void update_speed(geometry_msgs::Point p, ros::Time time) {
         estimated_speed += dst/dt;
     }
     estimated_speed /= (VELS_DIM/2 -1);
+    estimated_acc = (estimated_speed - vels[(now+1)%VELS_DIM].vel) / 
+      (vels[now].t - vels[(now+1)%VELS_DIM].t).toSec(); 
 
+    vels[now].vel = estimated_speed;
     now = (now+1) % VELS_DIM;
 }
 
