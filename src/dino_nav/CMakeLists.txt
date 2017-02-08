@@ -52,7 +52,7 @@ target_link_libraries(brake_test  ${catkin_LIBRARIES} ${ALLEGRO5_LIBRARIES} ${AL
 add_dependencies(dinonav ${PROJECT_NAME}_gencfg)
 
 if(ALLEGRO5_FOUND)
-    add_executable(viewer src/viewer.cpp src/dinonav.cpp src/pathfind.cpp src/common.cpp src/grid.cpp)
+    add_executable(viewer src/viewer.cpp src/common.cpp src/grid.cpp)
     target_link_libraries(viewer  ${catkin_LIBRARIES} ${ALLEGRO5_LIBRARIES} ${ALLEGRO_PRIMITIVES_LIBRARIES}
                                   ${ALLEGRO_TTF_LIBRARIES})
 endif()

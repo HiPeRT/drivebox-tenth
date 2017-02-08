@@ -125,13 +125,7 @@ void init_car(car_t &car, view_t &view, float zoom) {
     float mul = (view.l/100);
     car.length = (18.0f/zoom)*mul;     
     car.width  = (10.0f/zoom)*mul;
-    
-    float_point_t o;
-    o.x = view.x + view.cell_l/2 + view.l/2 - car.width/2;
-    o.y = view.y + view.l - car.length;
-    viz_rect(o, car.width, car.length, CAR_COLOR,1);
 }
-
 
 void draw_track(track_t &track, view_t &view) { 
     float_point_t pos;
@@ -296,9 +290,11 @@ segment_t calc_curve(grid_t &grid, int gate_idx, view_t &view, car_t &car) {
     }
     viz_line(int_v, l_v, PATH_COLOR, 1);
 
-    curve.b.x += cos(s_ang + M_PI)*car.width*2;   
-    curve.b.y += sin(s_ang + M_PI)*car.width*2; 
-
+    //anticipate break
+    if(estimated_speed > 1) {
+        curve.b.x += cos(s_ang + M_PI)*car.width*(estimated_speed-1);   
+        curve.b.y += sin(s_ang + M_PI)*car.width*(estimated_speed-1); 
+    }
     //sign on the center of curve
     float_point_t center;
     center.x = (opp_v.x + l_v.x)/2;
@@ -373,6 +369,10 @@ void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
 
     car_t car;
     init_car(car, view, nav.zoom);
+    float_point_t o;
+    o.x = view.x + view.cell_l/2 + view.l/2 - car.width/2;
+    o.y = view.y + view.l - car.length;
+    viz_rect(o, car.width, car.length, CAR_COLOR,1);
 
     int xp = grid.size/2, yp = grid.size - (car.length/10*8)/view.cell_l;
     inflate(grid, xp, yp, 0, 3);
@@ -514,6 +514,9 @@ void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
 
     //PUB stats for viewer
     dino_nav::Stat stat;
+    stat.car_w = car.width;
+    stat.car_l = car.length;
+
     stat.grid_size = grid.size;
     std::vector<signed char> vgrd(grid.data, grid.data+(grid.size*grid.size));
     stat.grid = vgrd;

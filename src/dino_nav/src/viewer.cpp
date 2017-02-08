@@ -94,7 +94,7 @@ void draw_drive_params(view_t &view, float throttle, float steer, float speed) {
 
     //speed
     static float smooth_speed =0;
-    float lerp = 0.02;
+    float lerp = 0.05;
     if(fabs(smooth_speed - speed) > lerp)
         smooth_speed < speed ? smooth_speed += lerp : smooth_speed -= lerp;
 
@@ -246,7 +246,8 @@ void map_recv(const dino_nav::Stat::ConstPtr& msg) {
     al_draw_rectangle(view.x, view.y, view.x + view.l, view.y + view.l, VIEW_COLOR, 1);
 
     car_t car;
-    init_car(car, view, msg->zoom);
+    car.width = msg->car_w;
+    car.length = msg->car_l;
     
     int xp = grid_dim/2, yp = grid_dim - (car.length/10*8)/view.cell_l;
 

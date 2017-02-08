@@ -1,5 +1,8 @@
 std_msgs/Header header
 
+float32 car_w
+float32 car_l
+
 int32 grid_size
 int8[] grid
 float32 zoom
