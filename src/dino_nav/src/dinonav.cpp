@@ -438,10 +438,11 @@ void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
 
 
     float steer = 0;
+    int steer_l = 0;
     {
         for(int i=0; i<path.size; i++) {
             point_t p = view2grid(path.data[i].x, path.data[i].y, view);
-            setgrid(grid, p.x, p.y, 44);
+            setgrid(grid, p.x, p.y, PATH);
         }
 
         int best_steer = 0;
@@ -461,7 +462,7 @@ void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
                 viz_line(p, p0, LPATH_COLOR, 1);
                 point_t gp = view2grid(p.x, p.y, view);
                 int val = getgrid(grid, gp.x, gp.y);
-                if(val == 44) {
+                if(val == PATH) {
                     viz_circle(p, 5, LPATH_COLOR, 1);
                     if(i > best_dist) {
                         best_steer = j;
@@ -488,6 +489,7 @@ void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
         }
 
         steer = best_steer;
+        steer_l = best_dist;
     }
 
     if(nav.enable) {
@@ -517,15 +519,7 @@ void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
     stat.grid = vgrd;
     stat.zoom = nav.zoom;
 
-    stat.path_size = path.size;
-    stat.path_start = path.start;
-    for(int i=0; i<path.size; i++) {     
-        dino_nav::FloatPoint point;
-        point.x = path.data[i].x;
-        point.y = path.data[i].y;
-
-        stat.path.push_back(point);
-    }
+    stat.steer_l = steer_l;
     stat.throttle = throttle;
     stat.steer = steer;
     stat.speed = estimated_speed;
@@ -535,41 +529,40 @@ void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
     viz_flip();
 }
 
-
 void update_speed(geometry_msgs::Point p, ros::Time time) {
 
-    static geometry_msgs::Point old_pose;
-    static ros::Time old_time;
     static bool init=false;
+    const int VELS_DIM = 10;
+    static vels_t vels[VELS_DIM];
+    static int now = 0;
+
     if(!init) {
-        old_pose.x = 0;
-        old_pose.y = 0;
-        old_pose.z = 0;
+        for(int i=0; i< VELS_DIM; i++) {
+            vels[i].t = time;
+            vels[i].pos.x = 0;
+            vels[i].pos.y = 0; 
+        }
         init = true;
-
-        old_time = time;
     }
+    vels[now].pos.x = p.x;
+    vels[now].pos.y = p.y;
+    vels[now].t = time;
 
-    geometry_msgs::Point pos = p;
-    ros::Time t = time;
+    estimated_speed = 0;
+    for(int i=1; i<VELS_DIM/2; i++) {
+        int idx = (now+i) % VELS_DIM;
 
-    double dx = pos.x - old_pose.x;
-    double dy = pos.y - old_pose.y;
-    double dst = sqrt(dx*dx + dy*dy);
-    double dt = (t - old_time).toSec();
+        double dx = vels[now].pos.x - vels[idx].pos.x;
+        double dy = vels[now].pos.y - vels[idx].pos.y;
+        double dst = sqrt(dx*dx + dy*dy);
+        double dt = (vels[now].t - vels[idx].t).toSec();
 
-    //update speed value
-    estimated_speed = dst/dt;
-    
-    old_pose = pos;
-    old_time = t;
+        //sum for mean
+        estimated_speed += dst/dt;
+    }
+    estimated_speed /= (VELS_DIM/2 -1);
 
-    /*
-    std_msgs::Float32 m;
-    m.data = estimated_speed;
-    speed_pub.publish(m);
-    */
-    
+    now = (now+1) % VELS_DIM;
 }
 
 /**

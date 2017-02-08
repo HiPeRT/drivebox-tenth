@@ -11,7 +11,7 @@ struct vquad_t {
 enum state_e { PREPARE, START, BRAKE, END };
 
 
-const int MAX_TESTS = 8;
+const int MAX_TESTS = 14;
 const int MAX_VELS = 1024;
 struct test_t {
     float throttle, brake;
@@ -232,31 +232,56 @@ void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
 
 
 void init_tests() {
-    test_num = 6; 
+    test_num = 12; 
 
     tests[0].throttle = 10;
-    tests[0].brake = -100;
+    tests[0].brake = -50;
     tests[0].vels_n = 0;
     
-    tests[1].throttle = 20;
+    tests[1].throttle = 10;
     tests[1].brake = -100;
     tests[1].vels_n = 0;
 
-    tests[2].throttle = 30;
-    tests[2].brake = -100;
+    tests[2].throttle = 20;
+    tests[2].brake = -50;
     tests[2].vels_n = 0;
     
-    tests[3].throttle = 40;
-    tests[3].brake = -100;
+    tests[3].throttle = 20;
+    tests[3].brake = -50;
     tests[3].vels_n = 0;
 
-    tests[4].throttle = 50;
-    tests[4].brake = -100;
+    tests[4].throttle = 30;
+    tests[4].brake = -80;
     tests[4].vels_n = 0;
     
-    tests[5].throttle = 60;
+    tests[5].throttle = 30;
     tests[5].brake = -100;
     tests[5].vels_n = 0;
+
+
+    tests[6].throttle = 40;
+    tests[6].brake = -80;
+    tests[6].vels_n = 0;
+    
+    tests[7].throttle = 40;
+    tests[7].brake = -100;
+    tests[7].vels_n = 0;
+
+    tests[8].throttle = 50;
+    tests[8].brake = -100;
+    tests[8].vels_n = 0;
+    
+    tests[9].throttle = 60;
+    tests[9].brake = -100;
+    tests[9].vels_n = 0;
+
+    tests[10].throttle = 70;
+    tests[10].brake = -100;
+    tests[10].vels_n = 0;
+    
+    tests[11].throttle = 80;
+    tests[11].brake = -100;
+    tests[11].vels_n = 0;
 }
 
 

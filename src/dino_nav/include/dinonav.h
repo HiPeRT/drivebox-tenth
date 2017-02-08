@@ -5,6 +5,7 @@
 #include "geometry_msgs/Pose.h"
 #include "geometry_msgs/PoseStamped.h"
 #include "nav_msgs/Odometry.h"
+#include "common.h"
 
 #include <dynamic_reconfigure/server.h>
 #include <dino_nav/DinonavConfig.h>
@@ -23,6 +24,7 @@ const int EMPTY     = 0;
 const int WALL      = 3;
 const int INFLATED  = 2;
 const int GATE      = 1;
+const int PATH      = 4;
 
 struct view_t {
 
@@ -46,6 +48,11 @@ struct track_t {
     sector_t sects[32];
     int sects_n;
     int cur_sect;
+};
+
+struct vels_t {
+    ros::Time t;
+    float_point_t pos;
 };
 
 void reconf(dino_nav::DinonavConfig &config, uint32_t level);

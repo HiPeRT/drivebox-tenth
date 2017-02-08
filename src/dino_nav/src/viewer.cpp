@@ -227,6 +227,8 @@ void map_recv(const dino_nav::Stat::ConstPtr& msg) {
                 col = INFLATED_COLOR;  
             } else if(val == GATE) {
                 col = GATE_COLOR;  
+            } else if(val == PATH) {
+                col = PATH_COLOR;
             } else {
                 continue;
             }
@@ -252,25 +254,17 @@ void map_recv(const dino_nav::Stat::ConstPtr& msg) {
                         view.x + view.cell_l/2 + view.l/2 + car.width/2, view.y + view.l - car.length, 
                         CAR_COLOR,1);
 
+    float_point_t p = grid2view(xp, yp, view);
+    float ang = -M_PI/2;
+    float_point_t p0 = p;
+    for(int i=0; i<msg->steer_l; i++) {
+        float steer_ang = ((float) msg->steer) /100.0 * M_PI/4; 
 
-    float max_cost = get_max_value(&msg->path_cost[1], msg->path_size-1);
-    for(int i=msg->path_size-1; i>=1; i--) {
-        float_point_t fp = grid2view(msg->path[i].x, msg->path[i].y, view);
-        float cost = msg->path_cost[i];
-
-        if(cost >0) {
-            float v = cost/max_cost;
-            al_draw_circle(fp.x, fp.y, 2, RGBA(1.0f, 1-v, 0, 1.0), 1);
-        } else {
-            al_draw_circle(fp.x, fp.y, 2, RGBA(0, 1.0f, 0, 1.0f), 1);
-        }
-    }                    
-
-    if(msg->path_start > 0) {
-        int x = msg->path[msg->path_start].x, y = msg->path[msg->path_start].y;
-        float_point_t s = grid2view(xp, yp, view);
-        float_point_t e = grid2view(x, y, view);
-        al_draw_line(s.x, s.y, e.x, e.y, VIEW_COLOR, 2);
+        p.x = p.x + cos(ang + steer_ang)*view.cell_l;
+        p.y = p.y + sin(ang + steer_ang)*view.cell_l;
+        ang = ang + (view.cell_l/car.length) * tan(steer_ang);
+        al_draw_line(p.x, p.y, p0.x, p0.y, CAR_COLOR, 2);
+        p0 = p;
     }
 
     //al_draw_textf(font, VIEW_COLOR, view.x, view.y + view.l, 0, "%f", msg->speed);
