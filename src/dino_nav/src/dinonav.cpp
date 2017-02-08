@@ -420,7 +420,7 @@ void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
     }
 
     static float throttle = 0;
-    float curve_speed = 2.0f;
+    float curve_speed = 1.4f;
     if(curve_dst >0 && curve_dst < 80*estimated_speed) {
         if(estimated_speed > curve_speed + 0.8f)
             throttle -= 10;
@@ -494,6 +494,8 @@ void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
 
     if(nav.enable) {
         race::drive_param m;
+        if(throttle > 15)
+            throttle = 15;
 
         m.velocity = throttle;
         m.angle = steer;

@@ -73,7 +73,7 @@ int main(int argc, char **argv) {
     server.setCallback(f);
 
     std::string path = ros::package::getPath("dino_nav");
-    path = path + "/tracks/track.xml";
+    path = path + "/tracks/lica.xml";
     if(!load_track(path.c_str()))
         return -1;
 
