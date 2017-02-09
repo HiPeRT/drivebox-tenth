@@ -170,7 +170,7 @@ void draw_rotated_rectangle(float_point_t o, float w, float h, float angle, ALLE
     al_draw_line(D.x, D.y, A.x, A.y, col, 1);
 }
 
-void draw_drive_params(view_t &view, float throttle, float steer, float speed, float acc) {
+void draw_drive_params(view_t &view, float throttle, float steer, float speed, float acc, float t_acc) {
 
     float_point_t origin;
     origin.x = view.x;
@@ -238,8 +238,11 @@ void draw_drive_params(view_t &view, float throttle, float steer, float speed, f
     //acceleration
     origin.x += t_height +40;
     float a_value = fclamp((acc /5) * (t_height/2), -t_height/2,t_height/2);
+    float ta_value = fclamp((t_acc /5) * (t_height/2), -t_height/2,t_height/2);
 
-    al_draw_filled_rectangle(origin.x, origin.y + t_height/2, origin.x + t_width, origin.y + t_height/2 - a_value, RGBA(1,1,0,1));
+    al_draw_filled_rectangle(origin.x, origin.y + t_height/2, origin.x + t_width/2, origin.y + t_height/2 - a_value, RGBA(1,1,0,1));
+    al_draw_filled_rectangle(origin.x + t_width/2, origin.y + t_height/2, origin.x + t_width, origin.y + t_height/2 - a_value, RGBA(0,1,1,1));
+
     al_draw_rectangle(origin.x, origin.y, origin.x + t_width, origin.y + t_height, VIEW_COLOR, 1);
     al_draw_line(origin.x, origin.y + t_height/2, origin.x + t_width, origin.y + t_height/2, VIEW_COLOR, 1);
 }

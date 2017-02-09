@@ -29,8 +29,8 @@
 
 #define viz_mouse() 0
 
-#define draw_drive_params(view, throttle, steer, speed, acc)    ;
-#define draw_grid(grid, view)                                   ;
+#define draw_drive_params(view, throttle, steer, speed, acc, t_acc)     ;
+#define draw_grid(grid, view)                                           ;
 
 #endif //DUMMYVIZ_H
 

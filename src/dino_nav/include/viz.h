@@ -36,7 +36,7 @@ void viz_text(float x, float y, int dim, ALLEGRO_COLOR col, const char *format, 
 
 float_point_t viz_mouse();
 
-void draw_drive_params(view_t &view, float throttle, float steer, float speed, float acc);
+void draw_drive_params(view_t &view, float throttle, float steer, float speed, float acc, float t_acc);
 void draw_grid(grid_t &grid, view_t &view);
 
 #endif //VIZ_H

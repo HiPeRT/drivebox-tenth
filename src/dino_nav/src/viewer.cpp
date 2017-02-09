@@ -175,7 +175,7 @@ void map_recv(const dino_nav::Stat::ConstPtr& msg) {
         p0 = p;
     }
 
-    draw_drive_params(view, msg->throttle, msg->steer, msg->speed, msg->acc);
+    draw_drive_params(view, msg->throttle, msg->steer, msg->speed, msg->acc, 0);
 
     draw_pose(view, msg->pose);
 

@@ -421,28 +421,11 @@ void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
         viz_line(start, enter, CAR_COLOR, 1);
         viz_line(enter, exit, CAR_COLOR, 1);
         curve_dst = point_dst(start, enter);
+        curve_dst = curve_dst/car.width*0.29;
         viz_text((start.x + enter.x)/2, (start.y + enter.y)/2, 10, RGBA(1,0,1,1), "  %f", curve_dst);
     } else {
         viz_circle(exit, 4, CAR_COLOR, 1);
     }
-
-    static float throttle = 0;
-    float curve_speed = 1.4f;
-    if(curve_dst >0 && curve_dst < 80*estimated_speed) {
-        if(estimated_speed > curve_speed + 0.8f)
-            throttle -= 10;
-        else if(estimated_speed > curve_speed + 0.2f)
-            throttle -= 2;
-        else if(estimated_speed < curve_speed - 0.5f)
-            throttle += 2;
-        else
-            throttle=0;
-    } else {
-        throttle += 2;
-    }
-    if(throttle > 100)  throttle = 100;
-    if(throttle < -100) throttle = -100;
-
 
     float steer = 0;
     int steer_l = 0;
@@ -499,11 +482,30 @@ void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
         steer_l = best_dist;
     }
 
+    static float throttle = 0;
+    float curve_speed = 1.7f;
+    float target_acc = 0;
+    if(curve_dst >0) {
+        float v_diff = curve_speed - estimated_speed;
+        target_acc = (v_diff*v_diff + 2*estimated_speed*v_diff) / (2*curve_dst);
+
+        if(throttle < 0 && target_acc > estimated_acc)
+            throttle = 0;
+
+        float a_diff = (target_acc - estimated_acc);
+        if(a_diff >0)
+            throttle += a_diff/4;
+        else
+            throttle += a_diff*2; 
+    } 
+    if(throttle != throttle)
+        throttle = 0;
+    throttle = fclamp(throttle, -100, nav.speed);
+
+
     if(nav.enable) {
         race::drive_param m;
-        if(throttle > nav.speed)
-            throttle = nav.speed;
-
+ 
         m.velocity = throttle;
         m.angle = steer;
         drive_pub.publish(m);
@@ -519,7 +521,7 @@ void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
         printf("DINONAV %lf %lf %lf\n", start, end, time);
     #endif
 
-    draw_drive_params(view, throttle, steer, estimated_speed, estimated_acc);
+    draw_drive_params(view, throttle, steer, estimated_speed, estimated_acc, target_acc);
 
     //PUB stats for viewer
     dino_nav::Stat stat;
