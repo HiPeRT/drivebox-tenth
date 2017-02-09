@@ -1,5 +1,11 @@
 #include "ros/ros.h"
-#include "viz.h"
+
+#ifdef NOVIZ
+    #include "dummyviz.h"
+#else
+    #include "viz.h"
+#endif
+
 #include "race/drive_param.h"
 #include "sensor_msgs/LaserScan.h"
 #include "common.h"
@@ -264,7 +270,7 @@ int main(int argc, char **argv) {
 
     init_tests();
 
-    viz_init();
+    viz_init(700,700);
     while(ros::ok() && viz_update()) {
         ros::spinOnce();
     }

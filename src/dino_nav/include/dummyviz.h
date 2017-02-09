@@ -13,7 +13,7 @@
 #define CAR_COLOR       0
 #define LPATH_COLOR     0
 
-#define viz_init()      true
+#define viz_init(w, h)  true
 #define viz_update()    true
 #define viz_destroy()   ;
 #define viz_flip()      ;
@@ -29,8 +29,8 @@
 
 #define viz_mouse() 0
 
-#define draw_drive_params(view, throttle, steer, speed) ;
-#define draw_grid(grid, view)                           ;
+#define draw_drive_params(view, throttle, steer, speed, acc)    ;
+#define draw_grid(grid, view)                                   ;
 
 #endif //DUMMYVIZ_H
 

@@ -7,7 +7,12 @@
 #include "grid.h"
 #include "pathfind.h"
 #include "common.h"
-#include "viz.h"
+
+#ifdef NOVIZ
+    #include "dummyviz.h"
+#else
+    #include "viz.h"
+#endif
 
 #include "dinonav.h"
 
@@ -514,7 +519,7 @@ void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
         printf("DINONAV %lf %lf %lf\n", start, end, time);
     #endif
 
-    draw_drive_params(view, throttle, steer, estimated_speed);
+    draw_drive_params(view, throttle, steer, estimated_speed, estimated_acc);
 
     //PUB stats for viewer
     dino_nav::Stat stat;
@@ -530,6 +535,7 @@ void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
     stat.throttle = throttle;
     stat.steer = steer;
     stat.speed = estimated_speed;
+    stat.acc = estimated_acc;
     stat.pose = pose;
     stat_pub.publish(stat);
 

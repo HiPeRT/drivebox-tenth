@@ -12,7 +12,12 @@
 
 #include "pathfind.h"
 #include "dinonav.h"
-#include "viz.h"
+
+#ifdef NOVIZ
+    #include "dummyviz.h"
+#else
+    #include "viz.h"
+#endif
 
 extern dinonav_t nav;
 

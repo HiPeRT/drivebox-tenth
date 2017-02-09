@@ -1,5 +1,3 @@
-#ifndef NOVIZ 
-
 #include <stdio.h>
 #include <math.h>
 #include <allegro5/allegro.h>
@@ -17,13 +15,13 @@ ALLEGRO_FONT *font[FONTS];
 
 ALLEGRO_MOUSE_STATE mouse;
 
-bool viz_init() {  
+bool viz_init(float w, float h) {  
     if(!al_init()) {
         printf("failed to initialize allegro!\n");
         return false;
     }
 
-    display = al_create_display(700, 700);
+    display = al_create_display(w, h);
     if(!display) {
         printf("failed to create display!\n");
         return false;
@@ -172,7 +170,7 @@ void draw_rotated_rectangle(float_point_t o, float w, float h, float angle, ALLE
     al_draw_line(D.x, D.y, A.x, A.y, col, 1);
 }
 
-void draw_drive_params(view_t &view, float throttle, float steer, float speed) {
+void draw_drive_params(view_t &view, float throttle, float steer, float speed, float acc) {
 
     float_point_t origin;
     origin.x = view.x;
@@ -236,6 +234,14 @@ void draw_drive_params(view_t &view, float throttle, float steer, float speed) {
     al_draw_arc(tacho.x, tacho.y, t_height/2, tach_start, tach_ang, VIEW_COLOR, 1);
 
     al_draw_textf(font[10], VIEW_COLOR, origin.x + t_height/2, origin.y + w_height +25, 0, "%2.1f m/s", speed);
+
+    //acceleration
+    origin.x += t_height +40;
+    float a_value = fclamp((acc /5) * (t_height/2), -t_height/2,t_height/2);
+
+    al_draw_filled_rectangle(origin.x, origin.y + t_height/2, origin.x + t_width, origin.y + t_height/2 - a_value, RGBA(1,1,0,1));
+    al_draw_rectangle(origin.x, origin.y, origin.x + t_width, origin.y + t_height, VIEW_COLOR, 1);
+    al_draw_line(origin.x, origin.y + t_height/2, origin.x + t_width, origin.y + t_height/2, VIEW_COLOR, 1);
 }
 
 void draw_grid(grid_t &grid, view_t &view) {
@@ -267,5 +273,3 @@ void draw_grid(grid_t &grid, view_t &view) {
     p.y = view.y + grid.points[grid.middle_id].y*view.cell_l;
     viz_rect(p, view.cell_l, view.cell_l, PATH_COLOR, 0);
 }
-
-#endif //not NOVIZ

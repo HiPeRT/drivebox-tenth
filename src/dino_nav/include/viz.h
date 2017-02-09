@@ -1,10 +1,6 @@
 #ifndef VIZ_H
 #define VIZ_H
 
-#ifdef NOVIZ
-    #include "dummyviz.h"
-#else
-
 #include <allegro5/allegro.h>
 #include "common.h"
 #include "dinonav.h"
@@ -22,7 +18,7 @@ const ALLEGRO_COLOR PATH_GRID_COLOR = RGBA(1, 0, 1, 0.2);
 const ALLEGRO_COLOR CAR_COLOR       = RGBA(0, 1, 1, 1.0);
 const ALLEGRO_COLOR LPATH_COLOR     = RGBA(0, 1, 1, 0.05);
 
-bool viz_init();
+bool viz_init(float w, float h);
 bool viz_update();
 void viz_destroy();
 void viz_flip();
@@ -40,10 +36,8 @@ void viz_text(float x, float y, int dim, ALLEGRO_COLOR col, const char *format, 
 
 float_point_t viz_mouse();
 
-void draw_drive_params(view_t &view, float throttle, float steer, float speed);
+void draw_drive_params(view_t &view, float throttle, float steer, float speed, float acc);
 void draw_grid(grid_t &grid, view_t &view);
-
-#endif //NOVIZ
 
 #endif //VIZ_H
 
