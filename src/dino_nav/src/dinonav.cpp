@@ -77,35 +77,45 @@ void discretize_laserscan(grid_t &grid, view_t &view, const sensor_msgs::LaserSc
     int size = msg->ranges.size();
     double angle = msg->angle_max + M_PI*3/2;
 
+    float noise_toll = 0.10;
+
     for(int i=0; i<size; i++) {
         float r = msg->ranges[i];
         
+        bool evaluate = false;
+        float  r_prec, r_succ;
+        i>0 ?       r_prec = msg->ranges[i-1] : r_prec = r;
+        i<size-1 ?  r_succ = msg->ranges[i+1] : r_prec = r;
+        if(fabs(r - r_prec) < noise_toll || fabs(r - r_succ) < noise_toll)
+            evaluate = true;
+
         if(i==size/2)
             grid.middle_id = grid.points_n;
 
-        //quad_l : view_l = r : view_r
-        //coodianates of the sigle ray
-        float view_r = r*view.l/quad_l;
-        float x = view.l/2 + cos(angle) * view_r;
-        float y = view.l + sin(angle) * view_r;
+        if(evaluate) {
+            //quad_l : view_l = r : view_r
+            //coodianates of the sigle ray
+            float view_r = r*view.l/quad_l;
+            float x = view.l/2 + cos(angle) * view_r;
+            float y = view.l + sin(angle) * view_r;
 
-        //coordinates of the corrispondent cell
-        int grid_x = x / view.cell_l;
-        int grid_y = y / view.cell_l;
-        if(setgrid(grid, grid_x, grid_y, WALL)) {
+            //coordinates of the corrispondent cell
+            int grid_x = x / view.cell_l;
+            int grid_y = y / view.cell_l;
+            if(setgrid(grid, grid_x, grid_y, WALL)) {
 
-            int n = grid.points_n;
-            if( n == 0 || ( n>0                            &&
-                            grid.points[n-1].x != grid_x   ||
-                            grid.points[n-1].y != grid_y       )) {
+                int n = grid.points_n;
+                if( n == 0 || ( n>0                            &&
+                                grid.points[n-1].x != grid_x   ||
+                                grid.points[n-1].y != grid_y       )) {
 
-                grid.points[n].x = grid_x;
-                grid.points[n].y = grid_y;
-                grid.points_n++;
+                    grid.points[n].x = grid_x;
+                    grid.points[n].y = grid_y;
+                    grid.points_n++;
+                }
             }
+            inflate(grid, grid_x, grid_y, INFLATED, nav.inflation);
         }
-        inflate(grid, grid_x, grid_y, INFLATED, nav.inflation);
-
         //if(i>0 && (last_x != grid_x || last_y != grid_y)) {
         //    grid_line(grid, grid_x, grid_y, last_x, last_y, GATE);
         //}
@@ -285,6 +295,7 @@ segment_t calc_curve(grid_t &grid, int gate_idx, view_t &view, car_t &car) {
     curve.a.y = int_v.y;   
     curve.b.x = int_v.x + cos(s_ang)*(car.width*track.sects[track.cur_sect].enter);   
     curve.b.y = int_v.y + sin(s_ang)*(car.width*track.sects[track.cur_sect].enter);   
+    curve.dir = sign;
 
     //reach end wall
     s_ang -= M_PI/2*sign;
@@ -307,22 +318,6 @@ segment_t calc_curve(grid_t &grid, int gate_idx, view_t &view, car_t &car) {
     center.x = (opp_v.x + l_v.x)/2;
     center.y = (opp_v.y + l_v.y)/2;
     draw_signal(center, 15, track.sects[track.cur_sect].dir);
-
-    //get curve passed
-    int_v.y += 80;
-    opp_v.y += 80;
-    viz_line(int_v, opp_v, VIEW_COLOR, 1);
-    static int time = 0;
-    static bool start = false;
-    if(start)
-        time++;
-    if(!start && opp_v.y > view.y + view. l && int_v.y > view.y + view. l)
-        start = true;
-    if(start && time >= 30 && opp_v.y < view.y + view. l && opp_v.y < view.y + view. l) {
-        track.cur_sect = (track.cur_sect +1) % track.sects_n;
-        time = 0;
-        start = false;
-    }
 
     return curve;
 }
@@ -502,6 +497,23 @@ void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
         throttle = 0;
     throttle = fclamp(throttle, -100, nav.speed);
 
+
+    static int in_curve = 0;
+    float_point_t pos;
+    pos.x = view.x + view.l/2;
+    pos.y = view.y + view.l - car.length*1;
+    
+    if(point_is_front(curve, pos)*curve.dir > 0) {
+        viz_line(curve.a, curve.b, RGBA(1,0,0,1), 3);
+        in_curve++;
+    } else {
+        viz_line(curve.a, curve.b, RGBA(0,1,0,1), 3);
+        if(in_curve >20) {
+            //curve++
+            track.cur_sect = (track.cur_sect +1) % track.sects_n;
+            in_curve = 0;
+        }
+    }
 
     if(nav.enable) {
         race::drive_param m;

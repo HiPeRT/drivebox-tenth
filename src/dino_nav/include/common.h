@@ -11,6 +11,7 @@ struct float_point_t {
 
 struct segment_t {
     float_point_t a, b;
+    int dir;
 };
 
 float points_angle(float x_part, float y_part, float x_goal, float y_goal);
