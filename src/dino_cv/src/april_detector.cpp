@@ -67,10 +67,6 @@ public:
     vector<AprilTags::TagDetection> detections = tagDetector->extractTags(gray);
     for (int i=0; i<detections.size(); i++) {
       detections[i].draw(image);
-
-      Eigen::Vector3d translation;
-      Eigen::Matrix3d rotation;
-      detections[i].getRelativeTranslationRotation(0.05, 600, 600, 640/2, 480/2, translation, rotation);
     }
     
     // Update GUI Window
