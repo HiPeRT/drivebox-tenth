@@ -278,3 +278,70 @@ void draw_grid(grid_t &grid, view_t &view) {
     p.y = view.y + grid.points[grid.middle_id].y*view.cell_l;
     viz_rect(p, view.cell_l, view.cell_l, PATH_COLOR, 0);
 }
+
+
+void draw_track(track_t &track, view_t &view) { 
+    float_point_t pos;
+    pos.x = view.x + view.l + 100; pos.y = view.y + 300;
+    float s_ang = M_PI/2 + M_PI;
+    float dim = 150;
+
+    float_point_t p = pos;
+    for(int i=0; i<track.sects_n; i++) {
+        sector_t s = track.sects[i];
+        float_point_t next;
+
+        next.x = p.x + cos(s_ang)*s.l*dim;
+        next.y = p.y + sin(s_ang)*s.l*dim;
+        
+        viz_line(p, next, VIEW_COLOR, 1 + (track.cur_sect == i)*4);
+        p = next;
+
+        if(s.dir == LEFT)
+            s_ang -= M_PI/2;
+        else
+            s_ang += M_PI/2; 
+    }
+
+}
+
+
+void draw_yaw(float yaw, view_t &view) {
+    float size = 50;
+    float_point_t center, pointer;
+    center.x = view.x + view.l + size/2 +10;
+    center.y = view.y + size/2 + 10; 
+    pointer.x = center.x + cos(yaw)*size/2;
+    pointer.y = center.y + sin(yaw)*size/2;
+    viz_line(center, pointer, PATH_COLOR, 1);
+
+    static float prec_yaw = yaw;
+    static bool  dir = false;
+    float delta = prec_yaw -yaw;
+    if(delta > yaw+M_PI/10 && dir == false) {
+        dir = true;
+        prec_yaw = yaw;
+    } else if(delta < yaw-M_PI/10 && dir == true) {
+        dir = false;
+        prec_yaw = yaw;       
+    }
+    viz_text(center.x - size/2, center.y + size/2 + 5, 12, VIEW_COLOR, "yaw %f", delta);
+    viz_arc(center.x, center.y, size/2, yaw, delta, VIEW_COLOR, 1);
+    if(fabs(delta) > M_PI/2 - M_PI/10) {
+        prec_yaw = yaw;
+    }
+} 
+
+void draw_car(view_t &view, car_t &car) {
+    float_point_t o;
+    o.x = view.x + view.cell_l/2 + view.l/2 - car.width/2;
+    o.y = view.y + view.l - car.length;
+    viz_rect(o, car.width, car.length, CAR_COLOR,1);
+}
+
+void draw_path(path_t &path) {
+    for(int i=1; i< path.size; i++) {
+        viz_circle(path.data[i], 2, PATH_COLOR, 1.0f);
+        //viz_line(path.data[i-1], path.data[i], PATH_COLOR, 1);
+    }
+}

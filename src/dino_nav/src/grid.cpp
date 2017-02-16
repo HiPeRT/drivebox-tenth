@@ -159,21 +159,6 @@ void inflate(grid_t &grid, int x, int y, int val, int n) {
     inflate(grid, x, y+1, val, n -1);
 }
 
-
-int choosegate(grid_t &grid, int px, int py) {
-
-    int max_dim = 0;
-    int idx = 0;
-    for(int i=0; i<grid.gates_n; i++) {
-        if(grid.gates[i].dim > max_dim)  {
-            max_dim = grid.gates[i].dim;
-            idx = i; 
-        }
-    }
-    
-    return idx;
-}
-
 float_point_t grid2view(int x, int y, view_t &view) {
     float_point_t p;
     p.x = view.x + x*view.cell_l + view.cell_l/2;
