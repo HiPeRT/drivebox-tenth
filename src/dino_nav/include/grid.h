@@ -1,7 +1,6 @@
 #ifndef GRID_H
 #define GRID_H
 
-#include "dinonav.h"
 #include "common.h"
 
 #define GRID_MAX_DIM 1000
@@ -25,6 +24,7 @@ struct grid_t {
     int gates_n;
 };
 
+#include "dinonav.h"
 
 void init_grid(grid_t &grid, int size);
 

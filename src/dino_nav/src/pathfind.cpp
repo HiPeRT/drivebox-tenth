@@ -10,17 +10,14 @@
 #include <vector>   
 
 
-#include "pathfind.h"
 #include "dinonav.h"
+#include "pathfind.h"
 
 #ifdef NOVIZ
     #include "dummyviz.h"
 #else
     #include "viz.h"
 #endif
-
-extern dinonav_t nav;
-
 
 class node_comp {
     bool reverse;

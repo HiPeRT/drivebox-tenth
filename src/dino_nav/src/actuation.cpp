@@ -11,40 +11,39 @@
 #include "pathfind.h"
 #include "actuation.h"
 
-extern dinonav_t nav;
-extern track_t track;
-extern float estimated_speed;
-extern float estimated_acc;
+void actuation(dinonav_t &nav, race::drive_param &drive_msg) {
 
+    point_t part = nav.car_pos;
+    point_t goal = nav.goal_pos;
 
-int actuation(point_t &part, point_t &goal, view_t &view, car_t &car, grid_t &grid, path_t &path, segment_t &curve, race::drive_param &drive_msg) {
-
-    float_point_t start = grid2view(part.x, part.y, view);
-    float_point_t enter = curve.b;
-    float_point_t exit = grid2view(goal.x, goal.y, view);
-    float curve_dst = -1;
-    if(curve.b.x >0) {
+    float_point_t start = grid2view(part.x, part.y, nav.view);
+    float_point_t enter = nav.curve.b;
+    float_point_t exit = grid2view(goal.x, goal.y, nav.view);
+    nav.curve_dst = -1;
+    if(nav.curve.b.x >0) {
         viz_circle(enter, 4, CAR_COLOR, 1);
         viz_circle(exit, 4, CAR_COLOR, 1);
         viz_line(start, enter, CAR_COLOR, 1);
         viz_line(enter, exit, CAR_COLOR, 1);
-        curve_dst = point_dst(start, enter);
-        curve_dst = curve_dst/car.width*0.29;
-        viz_text((start.x + enter.x)/2, (start.y + enter.y)/2, 10, RGBA(1,0,1,1), "  %f", curve_dst);
+        
+        nav.curve_dst = point_dst(start, enter);
+        nav.curve_dst = nav.curve_dst/nav.car.width*0.29;
+        viz_text((start.x + enter.x)/2, (start.y + enter.y)/2, 10, RGBA(1,0,1,1), "  %f", nav.curve_dst);
     } else {
         viz_circle(exit, 4, CAR_COLOR, 1);
     }
 
-    int steer_l;
-    float steer = calc_steer(start, view, car, grid, path, steer_l);
-    float target_acc;
-    float throttle = calc_throttle(curve, curve_dst, view, car, target_acc);
+    nav.steer = calc_steer(start, nav.view, nav.car, nav.grid, nav.path, nav.steer_l);
 
-    drive_msg.velocity = throttle;
-    drive_msg.angle = steer;
+    nav.throttle = calc_throttle(nav.view, nav.car, nav.track, nav.curve, 
+        nav.curve_dst, nav.estimated_speed, nav.estimated_acc, nav.target_acc);
     
-    draw_drive_params(view, throttle, steer, estimated_speed, estimated_acc, target_acc);
-    return steer_l;
+    if(nav.throttle > nav.conf.throttle)
+        nav.throttle = nav.conf.throttle;
+
+    drive_msg.velocity = nav.throttle;
+    drive_msg.angle = nav.steer;
+    
 }
 
 
@@ -108,7 +107,8 @@ float calc_steer(float_point_t &start, view_t &view, car_t &car, grid_t &grid, p
 }
 
 
-float calc_throttle(segment_t &curve, float curve_dst, view_t &view, car_t &car, float &target_acc) {
+float calc_throttle(view_t &view, car_t &car, track_t &track, segment_t &curve, 
+    float curve_dst, float estimated_speed, float estimated_acc, float &target_acc) {
 
     static float throttle = 0;
     float curve_speed = 1.7f;
@@ -126,10 +126,13 @@ float calc_throttle(segment_t &curve, float curve_dst, view_t &view, car_t &car,
             throttle += a_diff/4;
         else
             throttle += a_diff*2; 
+    } else {
+        throttle++;
     } 
+
     if(throttle != throttle)
         throttle = 0;
-    throttle = fclamp(throttle, -100, nav.speed);
+    throttle = fclamp(throttle, -100, 100);
 
 
     static int in_curve = 0;

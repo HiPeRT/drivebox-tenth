@@ -10,11 +10,10 @@
 #include <dynamic_reconfigure/server.h>
 #include <dino_nav/DinonavConfig.h>
 
-struct dinonav_t {
+struct conf_t {
 
-    float   speed;
+    float   throttle;
     int     inflation;
-    int     stop_cost;
     int     grid_dim;
     float   zoom;
     bool    enable;
@@ -55,6 +54,36 @@ struct vels_t {
     float_point_t pos;
     float vel;
 };
+
+#include "pathfind.h"
+
+struct dinonav_t {
+
+    conf_t conf;
+
+    view_t view;
+    car_t car;
+
+    track_t track;
+
+    grid_t grid;
+    path_t path;
+
+    point_t car_pos;
+    point_t goal_pos;
+    segment_t curve;
+    float curve_dst;
+
+    int steer_l;
+    float steer, throttle;
+    
+    float estimated_speed;
+    float estimated_acc;
+    double yaw = 0;
+
+    float target_acc;
+};
+
 
 void reconf(dino_nav::DinonavConfig &config, uint32_t level);
 void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg);

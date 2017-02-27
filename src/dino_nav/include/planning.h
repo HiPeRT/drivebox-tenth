@@ -5,9 +5,11 @@
 #include "grid.h"
 #include "dinonav.h"
 
-point_t planning(point_t &car_pos, car_t &car, view_t &view, grid_t &grid, path_t &path, segment_t &curve);
+void planning(dinonav_t &nav);
 
 int choosegate(grid_t &grid, int px, int py);
-segment_t calc_curve(grid_t &grid, int gate_idx, view_t &view, car_t &car);
+
+segment_t calc_curve(grid_t &grid, int gate_idx, 
+    view_t &view, car_t &car, track_t &track, conf_t &conf);
 
 #endif //PLANNING_H

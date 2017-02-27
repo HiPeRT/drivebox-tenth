@@ -27,21 +27,15 @@
 ros::Publisher drive_pub, stat_pub;
 
 dinonav_t nav;
-track_t track;
-
 geometry_msgs::Pose pose;
-float estimated_speed;
-float estimated_acc;
-double yaw = 0;
 
 void reconf(dino_nav::DinonavConfig &config, uint32_t level) {
   ROS_INFO("Reconfigure Request");
-  nav.speed = config.speed;
-  nav.inflation = config.inflation;
-  nav.stop_cost = config.stop_cost;
-  nav.grid_dim = config.grid_dim;
-  nav.zoom = config.zoom;
-  nav.enable = config.enable;
+  nav.conf.throttle = config.throttle;
+  nav.conf.inflation = config.inflation;
+  nav.conf.grid_dim = config.grid_dim;
+  nav.conf.zoom = config.zoom;
+  nav.conf.enable = config.enable;
 }
 
 void init_view(view_t &view, int size) {
@@ -58,14 +52,14 @@ void init_car(car_t &car, view_t &view, float zoom) {
 
 void init(view_t &view, car_t &car, grid_t &grid) {
 
-    init_view(view, nav.grid_dim);
-    init_car(car, view, nav.zoom);
+    init_view(view, nav.conf.grid_dim);
+    init_car(car, view, nav.conf.zoom);
 
     static int *grid_addr=NULL;
     if(grid_addr == NULL)
         grid_addr = new int[GRID_MAX_DIM*GRID_MAX_DIM];
     grid.data = grid_addr;
-    init_grid(grid, nav.grid_dim);
+    init_grid(grid, nav.conf.grid_dim);
 }
 
 /**
@@ -77,28 +71,24 @@ void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
     //ROS_INFO("Scan recived: [%f]", msg->scan_time);
     ros::WallTime time_debug = ros::WallTime::now();
 
-    view_t view;
-    grid_t grid;
-    car_t car;
-    init(view, car, grid);
+    init(nav.view, nav.car, nav.grid);
     
-    point_t car_pos = perception(grid, car, view, msg);
+    perception(nav, msg);
 
-    draw_car(view, car);
-    draw_grid(grid, view);   
+    draw_car(nav.view, nav.car);
+    draw_grid(nav.grid, nav.view);   
 
-    path_t path;
-    segment_t curve;
-    point_t goal_pos = planning(car_pos, car, view, grid, path, curve);
+    planning(nav);
     
-    draw_yaw(yaw, view); 
-    draw_track(track, view);
-    draw_path(path);
+    draw_yaw(nav.yaw, nav.view); 
+    draw_track(nav.track, nav.view);
+    draw_path(nav.path);
 
     race::drive_param drive_msg;
-    int steer_l = actuation(car_pos, goal_pos, view, car, grid, path, curve, drive_msg);
-    if(nav.enable) 
+    actuation(nav, drive_msg);
+    if(nav.conf.enable) 
         drive_pub.publish(drive_msg);
+    draw_drive_params(nav.view, nav.throttle, nav.steer, nav.estimated_speed, nav.estimated_acc, nav.target_acc);
 
     double time = (ros::WallTime::now() - time_debug).toSec();
     #ifndef TIME_PROFILER
@@ -113,19 +103,19 @@ void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
 
     //PUB stats for viewer
     dino_nav::Stat stat;
-    stat.car_w = car.width;
-    stat.car_l = car.length;
+    stat.car_w = nav.car.width;
+    stat.car_l = nav.car.length;
 
-    stat.grid_size = grid.size;
-    std::vector<signed char> vgrd(grid.data, grid.data+(grid.size*grid.size));
+    stat.grid_size = nav.grid.size;
+    std::vector<signed char> vgrd(nav.grid.data, nav.grid.data+(nav.grid.size*nav.grid.size));
     stat.grid = vgrd;
-    stat.zoom = nav.zoom;
+    stat.zoom = nav.conf.zoom;
 
-    stat.steer_l = steer_l;
+    stat.steer_l = nav.steer_l;
     stat.throttle = drive_msg.velocity;
     stat.steer = drive_msg.angle;
-    stat.speed = estimated_speed;
-    stat.acc = estimated_acc;
+    stat.speed = nav.estimated_speed;
+    stat.acc = nav.estimated_acc;
     stat.pose = pose;
     stat_pub.publish(stat);
 
@@ -152,7 +142,7 @@ void update_speed(geometry_msgs::Point p, ros::Time time) {
     vels[now].pos.y = p.y;
     vels[now].t = time;
 
-    estimated_speed = 0;
+    nav.estimated_speed = 0;
     for(int i=1; i<VELS_DIM/2; i++) {
         int idx = (now+i) % VELS_DIM;
 
@@ -162,13 +152,13 @@ void update_speed(geometry_msgs::Point p, ros::Time time) {
         double dt = (vels[now].t - vels[idx].t).toSec();
 
         //sum for mean
-        estimated_speed += dst/dt;
+        nav.estimated_speed += dst/dt;
     }
-    estimated_speed /= (VELS_DIM/2 -1);
-    estimated_acc = (estimated_speed - vels[(now+1)%VELS_DIM].vel) / 
+    nav.estimated_speed /= (VELS_DIM/2 -1);
+    nav.estimated_acc = (nav.estimated_speed - vels[(now+1)%VELS_DIM].vel) / 
       (vels[now].t - vels[(now+1)%VELS_DIM].t).toSec(); 
 
-    vels[now].vel = estimated_speed;
+    vels[now].vel = nav.estimated_speed;
     now = (now+1) % VELS_DIM;
 }
 
@@ -192,7 +182,7 @@ void odom_recv(const nav_msgs::Odometry::ConstPtr& msg) {
     tf::Quaternion q(   pose.orientation.x, pose.orientation.y,
                         pose.orientation.z, pose.orientation.w);
     double roll, pitch;
-    tf::Matrix3x3(q).getRPY(roll, pitch, yaw);
+    tf::Matrix3x3(q).getRPY(roll, pitch, nav.yaw);
 }
 
 

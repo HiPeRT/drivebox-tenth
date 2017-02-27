@@ -5,8 +5,8 @@
 #include "grid.h"
 #include "dinonav.h"
 
-point_t perception(grid_t &grid, car_t &car, view_t &view, const sensor_msgs::LaserScan::ConstPtr& msg);
+void perception(dinonav_t &nav, const sensor_msgs::LaserScan::ConstPtr& msg);
 
-void discretize_laserscan(grid_t &grid, view_t &view, const sensor_msgs::LaserScan::ConstPtr& msg);
+void discretize_laserscan(grid_t &grid, view_t &view, conf_t &conf, const sensor_msgs::LaserScan::ConstPtr& msg);
 
 #endif //PERCEPTION_H

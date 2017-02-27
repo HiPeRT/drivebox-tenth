@@ -10,28 +10,21 @@
 #include "pathfind.h"
 #include "planning.h"
 
-extern dinonav_t nav;
-extern track_t track;
-extern float estimated_speed;
-extern float estimated_acc;
 
-point_t planning(point_t &car_pos, car_t &car, view_t &view, grid_t &grid, path_t &path, segment_t &curve) {
+void planning(dinonav_t &nav) {
  
-    point_t goal_pos;
-    goal_pos.x = -1;
-    goal_pos.y = -1;
+    nav.goal_pos.x = -1;
+    nav.goal_pos.y = -1;
 
-    int gate_idx = choosegate(grid, car_pos.x, car_pos.y);
-    curve = calc_curve(grid, gate_idx, view, car);
-    
-    goal_pos.x = (grid.gates[gate_idx].s.x + grid.gates[gate_idx].e.x)/2;
-    goal_pos.y = (grid.gates[gate_idx].s.y + grid.gates[gate_idx].e.y)/2;
+    int gate_idx = choosegate(nav.grid, nav.car_pos.x, nav.car_pos.y);
+    nav.curve = calc_curve(nav.grid, gate_idx, nav.view, nav.car, nav.track, nav.conf);
 
-    setgrid(grid, goal_pos.x, goal_pos.y, 0);
+    nav.goal_pos.x = (nav.grid.gates[gate_idx].s.x + nav.grid.gates[gate_idx].e.x)/2;
+    nav.goal_pos.y = (nav.grid.gates[gate_idx].s.y + nav.grid.gates[gate_idx].e.y)/2;
 
-    path = pathfinding(grid, view, car, car_pos, goal_pos, curve);
+    setgrid(nav.grid, nav.goal_pos.x, nav.goal_pos.y, 0);
 
-    return goal_pos;
+    nav.path = pathfinding(nav.grid, nav.view, nav.car, nav.car_pos, nav.goal_pos, nav.curve);
 }
 
 
@@ -76,7 +69,8 @@ int choosegate(grid_t &grid, int px, int py) {
 }
 
 
-segment_t calc_curve(grid_t &grid, int gate_idx, view_t &view, car_t &car) {
+segment_t calc_curve(grid_t &grid, int gate_idx, 
+    view_t &view, car_t &car, track_t &track, conf_t &conf) {
     
     segment_t curve;
     curve.a.x = -1; curve.a.y = -1;
@@ -165,7 +159,7 @@ segment_t calc_curve(grid_t &grid, int gate_idx, view_t &view, car_t &car) {
     float_point_t int_v = grid2view(internal.x, internal.y, view);
     float_point_t opp_v, l_v;
     float width = 0;
-    for(int i=1*nav.inflation +2; i<grid.size; i++) {
+    for(int i=1*conf.inflation +2; i<grid.size; i++) {
         opp_v.x = int_v.x + cos(s_ang)*view.cell_l*i;   opp_v.y = int_v.y + sin(s_ang)*view.cell_l*i;    
         point_t opp = view2grid(opp_v.x, opp_v.y, view);
         width = i;
@@ -182,7 +176,7 @@ segment_t calc_curve(grid_t &grid, int gate_idx, view_t &view, car_t &car) {
 
     //reach end wall
     s_ang -= M_PI/2*sign;
-    for(int i=1*nav.inflation +2; i<grid.size; i++) {
+    for(int i=1*conf.inflation +2; i<grid.size; i++) {
         l_v.x = int_v.x + cos(s_ang)*view.cell_l*i;   l_v.y = int_v.y + sin(s_ang)*view.cell_l*i;    
         point_t l = view2grid(l_v.x, l_v.y, view);
         if(getgrid(grid, l.x, l.y) > GATE)

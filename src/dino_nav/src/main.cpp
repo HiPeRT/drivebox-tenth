@@ -15,7 +15,7 @@
 #include <ros/package.h>
 
 extern ros::Publisher drive_pub, stat_pub; //speed_pub;
-extern track_t track;
+extern dinonav_t nav;
 
 bool load_track(const char *path) {
 
@@ -23,31 +23,33 @@ bool load_track(const char *path) {
 
     if(doc.LoadFile()) {
         printf("reading track: %s\n", path);
-        track.cur_sect = 0;
+        track_t *track = &nav.track;
+        track->cur_sect = 0;
 
         int i=0;
         TiXmlElement * sect = doc.FirstChildElement()->FirstChildElement();
         while(sect != NULL) {
             std::cout<<"Sector "<<i<<"\t";
             
-            sect->QueryFloatAttribute("l", &track.sects[i].l);
-            sect->QueryFloatAttribute("enter", &track.sects[i].enter);
-            sect->QueryFloatAttribute("exit", &track.sects[i].exit);
-            sect->QueryFloatAttribute("vel", &track.sects[i].vel);
+            sect->QueryFloatAttribute("l", &track->sects[i].l);
+            sect->QueryFloatAttribute("enter", &track->sects[i].enter);
+            sect->QueryFloatAttribute("exit", &track->sects[i].exit);
+            sect->QueryFloatAttribute("vel", &track->sects[i].vel);
 
             if(strcmp(sect->Attribute("dir"), "left") == 0) 
-                track.sects[i].dir = LEFT;
+                track->sects[i].dir = LEFT;
             else
-                track.sects[i].dir = RIGHT;
+                track->sects[i].dir = RIGHT;
 
-            std::cout<<"l: "<<track.sects[i].l<<"\t vel: "<<track.sects[i].vel<<"\t";
-            std::cout<<" ent: "<<track.sects[i].enter<<"\t exit: "<<track.sects[i].exit;
-            std::cout<<"\t dir: "<<track.sects[i].dir;
+            std::cout<<"l: "<<track->sects[i].l<<"\t vel: "<<track->sects[i].vel<<"\t";
+            std::cout<<" ent: "<<track->sects[i].enter<<"\t exit: "<<track->sects[i].exit;
+            std::cout<<"\t dir: "<<track->sects[i].dir;
             std::cout<<"\n";
             sect = sect->NextSiblingElement();
             i++;
-            track.sects_n++;
+            track->sects_n++;
         }
+
         return true;
     } else {
         printf("unable to load track: %s\n", path);

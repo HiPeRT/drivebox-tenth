@@ -14,21 +14,19 @@ extern track_t track;
 extern float estimated_speed;
 extern float estimated_acc;
 
-point_t perception(grid_t &grid, car_t &car, view_t &view, const sensor_msgs::LaserScan::ConstPtr& msg) {
+void perception(dinonav_t &nav, const sensor_msgs::LaserScan::ConstPtr& msg) {
 
-    discretize_laserscan(grid, view, msg);
+    discretize_laserscan(nav.grid, nav.view, nav.conf, msg);
 
-    point_t car_pos;
-    car_pos.x = grid.size/2;
-    car_pos.y = grid.size - (car.length/10*8)/view.cell_l;
-    inflate(grid, car_pos.x, car_pos.y, 0, 3);
-    
-    return car_pos;
+    nav.car_pos.x = nav.grid.size/2;
+    nav.car_pos.y = nav.grid.size - (nav.car.length/10*8)/nav.view.cell_l;
+    inflate(nav.grid, nav.car_pos.x, nav.car_pos.y, 0, 3);
+
 }
 
-void discretize_laserscan(grid_t &grid, view_t &view, const sensor_msgs::LaserScan::ConstPtr& msg) {
+void discretize_laserscan(grid_t &grid, view_t &view, conf_t &conf, const sensor_msgs::LaserScan::ConstPtr& msg) {
 
-    float maxd = nav.zoom;
+    float maxd = conf.zoom;
     int quad_l = maxd*2;
     int size = msg->ranges.size();
     double angle = msg->angle_max + M_PI*3/2;
@@ -70,7 +68,7 @@ void discretize_laserscan(grid_t &grid, view_t &view, const sensor_msgs::LaserSc
                     grid.points_n++;
                 }
             }
-            inflate(grid, grid_x, grid_y, INFLATED, nav.inflation);
+            inflate(grid, grid_x, grid_y, INFLATED, conf.inflation);
         }
         //if(i>0 && (last_x != grid_x || last_y != grid_y)) {
         //    grid_line(grid, grid_x, grid_y, last_x, last_y, GATE);
