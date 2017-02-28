@@ -1,15 +1,16 @@
 #include <iostream>
 #include <math.h>
 
+#include "actuation.h"
+
+#include "dinonav.h"
+#include "pathfind.h"
+
 #ifdef NOVIZ
     #include "dummyviz.h"
 #else
     #include "viz.h"
 #endif
-
-#include "dinonav.h"
-#include "pathfind.h"
-#include "actuation.h"
 
 void actuation(dinonav_t &nav, race::drive_param &drive_msg) {
 

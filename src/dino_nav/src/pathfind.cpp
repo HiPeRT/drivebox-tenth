@@ -9,7 +9,6 @@
 #include <algorithm> 
 #include <vector>   
 
-
 #include "dinonav.h"
 #include "pathfind.h"
 

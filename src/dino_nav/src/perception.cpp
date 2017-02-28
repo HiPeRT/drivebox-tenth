@@ -1,13 +1,13 @@
 #include <iostream>
 #include <math.h>
 
+#include "perception.h"
+
 #ifdef NOVIZ
     #include "dummyviz.h"
 #else
     #include "viz.h"
 #endif
-
-#include "perception.h"
 
 extern dinonav_t nav;
 extern track_t track;

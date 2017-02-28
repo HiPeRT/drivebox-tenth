@@ -1,15 +1,14 @@
 #include <iostream>
 #include <math.h>
 
+#include "planning.h"
+#include "pathfind.h"
+
 #ifdef NOVIZ
     #include "dummyviz.h"
 #else
     #include "viz.h"
 #endif
-
-#include "pathfind.h"
-#include "planning.h"
-
 
 void planning(dinonav_t &nav) {
  
