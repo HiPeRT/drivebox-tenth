@@ -33,7 +33,8 @@ int test_num;
 ros::Publisher drive_pub;
 float zed_speed;
 
-const float START_DST = 12;
+const float START_DST = 4;
+const int MIN_DST = 2;
 
 void print_tests(float_point_t pos, int cur_test) {
 
@@ -113,7 +114,7 @@ void run_test(float &throttle, float &steer, float wall_dist, vquad_t &view) {
     switch(state) {
 
     case PREPARE:
-        viz_text(view.x + view.l + 20, view.y +140, 15, VIEW_COLOR, "test %d status: PREPARE");
+      viz_text(view.x + view.l + 20, view.y +140, 15, VIEW_COLOR, "test %d status: PREPARE", current_test);
         if(wall_dist < START_DST) {
             throttle = 0;
             steer = -steer;
@@ -126,8 +127,8 @@ void run_test(float &throttle, float &steer, float wall_dist, vquad_t &view) {
         break;
 
     case START:
-        viz_text(view.x + view.l + 20, view.y +140, 15, VIEW_COLOR, "test %d status: START");
-        if(wall_dist < 5) {
+      viz_text(view.x + view.l + 20, view.y +140, 15, VIEW_COLOR, "test %d status: START", current_test);
+        if(wall_dist < MIN_DST) {
 	        throttle = -100;
 	        printf("emergency brake");
 	    } else if(lidar_speed < test->speed) {
@@ -145,7 +146,7 @@ void run_test(float &throttle, float &steer, float wall_dist, vquad_t &view) {
         break;
 
     case BRAKE:
-        viz_text(view.x + view.l + 20, view.y +140, 15, VIEW_COLOR, "test %d status: BRAKE");
+      viz_text(view.x + view.l + 20, view.y +140, 15, VIEW_COLOR, "test %d status: BRAKE", current_test);
         if(lidar_speed > 0.01 || lidar_speed < -0.01) {
             throttle = test->brake;
         } else {
