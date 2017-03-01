@@ -33,7 +33,7 @@ int test_num;
 ros::Publisher drive_pub;
 float zed_speed;
 
-const float START_DST = 4;
+const float START_DST = 12;
 const int MIN_DST = 2;
 
 void print_tests(float_point_t pos, int cur_test) {
