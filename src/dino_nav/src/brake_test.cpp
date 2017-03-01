@@ -9,6 +9,7 @@
 #include "race/drive_param.h"
 #include "sensor_msgs/LaserScan.h"
 #include "common.h"
+#include "dinonav.h"
 
 struct vquad_t {
     float x, y, l;
@@ -16,18 +17,23 @@ struct vquad_t {
 
 enum state_e { PREPARE, START, BRAKE, END };
 
+float update_lidar_speed(float dst, ros::Time time);
 
-const int MAX_TESTS = 14;
+const int MAX_TESTS = 256;
 const int MAX_VELS = 1024;
 struct test_t {
-    float throttle, brake;
+    float speed, brake;
     float vels[MAX_VELS];
+    float zed_vels[MAX_VELS];
     int vels_n;
     float speed_reached, start, brake_start, brake_end;
 } tests[MAX_TESTS];
 int test_num;
 
 ros::Publisher drive_pub;
+float zed_speed;
+
+const float START_DST = 12;
 
 void print_tests(float_point_t pos, int cur_test) {
 
@@ -36,7 +42,7 @@ void print_tests(float_point_t pos, int cur_test) {
         float offs = 40*i;
 
         viz_text(pos.x, pos.y + offs, 12, VIEW_COLOR, 
-            "TEST %d, throttle: %f  brake: %f", i, t->throttle, t->brake);
+            "TEST %d, speed: %f  brake: %f", i, t->speed, t->brake);
         viz_text(pos.x, pos.y + offs +10, 12, VIEW_COLOR, 
             "dists: start %f, brake start: %f  brake end: %f", t->start, t->brake_start, t->brake_end);
          viz_text(pos.x, pos.y + offs +20, 12, VIEW_COLOR, 
@@ -50,7 +56,7 @@ void print_test_text(int id) {
 
     printf("\n");
     printf("-------- TEST %d --------\n", id);
-    printf("throttle: %f  brake: %f\n", t->throttle, t->brake);
+    printf("speed: %f  brake: %f\n", t->speed, t->brake);
     printf("dists: start %f, brake start: %f  brake end: %f\n", 
         t->start, t->brake_start, t->brake_end);
     printf("max speed %f, acc dist %f, brake dist %f\n", 
@@ -59,6 +65,11 @@ void print_test_text(int id) {
     printf("vels: ");
     for(int i=0; i<t->vels_n; i++)
         printf("%f ", t->vels[i]);
+    printf("\n");
+    printf("-------------------------\n");
+    printf("zed-vels: ");
+    for(int i=0; i<t->vels_n; i++)
+        printf("%f ", t->zed_vels[i]);
     printf("\n");
     printf("-------------------------\n\n");
 }
@@ -73,31 +84,29 @@ float mean_ray(std::vector<float> v, int idx, int l) {
 
 void run_test(float &throttle, float &steer, float wall_dist, vquad_t &view) {
 
-    const float start_dist = 4.5f;
-    const float min_dist = 3;
+    static float old_throttle;
 
     static state_e state = PREPARE;
 
-    static float old_dist = wall_dist;
-    static float speed = 0;
-    viz_text(view.x + view.l + 20, view.y +100, 20, VIEW_COLOR, "speed: %f", speed);
+    float lidar_speed = update_lidar_speed(wall_dist, ros::Time::now());
+    viz_text(view.x + view.l + 20, view.y +100, 18, VIEW_COLOR, "lidar speed: %f", lidar_speed);
+    viz_text(view.x + view.l + 20, view.y +120, 18, VIEW_COLOR, "zed speed:   %f", zed_speed);
     
-    const int N = 5;
-    static int n = 0;
-    if(n%N == 0) {
-        speed = (old_dist - wall_dist) / (0.025*N);
-        old_dist = wall_dist;
-    }
-    n++;
+    static int n =0;
+    if(n<100) {
+        n++;
+        if(n == 99)
+            printf("test 0 PREPARE\n");
+        return;
+    } 
 
     static int current_test = 0;
-    if(n == 1)
-        printf("test %d PREPARE\n", current_test);
 
     test_t *test = &tests[current_test];
 
     if( (state == START || state == BRAKE) && test->vels_n < MAX_VELS-1) {
-        test->vels[test->vels_n] = speed;
+        test->vels[test->vels_n] = lidar_speed;
+        test->zed_vels[test->vels_n] = zed_speed;
         test->vels_n++;
     }
 
@@ -105,34 +114,39 @@ void run_test(float &throttle, float &steer, float wall_dist, vquad_t &view) {
 
     case PREPARE:
         viz_text(view.x + view.l + 20, view.y +140, 15, VIEW_COLOR, "test %d status: PREPARE");
-        if(wall_dist < start_dist) {
+        if(wall_dist < START_DST) {
             throttle = 0;
             steer = -steer;
         } else {
             state = START;
             test->start = wall_dist;
             printf("test %d START\n", current_test);
+            old_throttle = 0;
         }
         break;
 
     case START:
         viz_text(view.x + view.l + 20, view.y +140, 15, VIEW_COLOR, "test %d status: START");
-        if(wall_dist < 1) {
-	    throttle = -100;
-	    printf("emergency brake");
-	} else if(wall_dist > min_dist) {
-            throttle = test->throttle;
+        if(wall_dist < 5) {
+	        throttle = -100;
+	        printf("emergency brake");
+	    } else if(lidar_speed < test->speed) {
+            throttle = old_throttle;
+            old_throttle += 0.3;
+
+            if(throttle > 100)
+                throttle = 100;
         } else {
             state = BRAKE;
             test->brake_start = wall_dist;
-            test->speed_reached = speed;
+            test->speed_reached = lidar_speed;
             printf("test %d BRAKE\n", current_test);
         }
         break;
 
     case BRAKE:
         viz_text(view.x + view.l + 20, view.y +140, 15, VIEW_COLOR, "test %d status: BRAKE");
-        if(speed > 0.01 || speed < -0.01) {
+        if(lidar_speed > 0.01 || lidar_speed < -0.01) {
             throttle = test->brake;
         } else {
             test->brake_end = wall_dist;
@@ -159,7 +173,7 @@ void run_test(float &throttle, float &steer, float wall_dist, vquad_t &view) {
     print_tests(test_p, current_test);
 }
 
-void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
+void laser_reciver(const sensor_msgs::LaserScan::ConstPtr& msg) {
      
     viz_clear();
     vquad_t view;
@@ -168,60 +182,13 @@ void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
     view.l = 200;
 
     int size = msg->ranges.size();
-    float orig_front_ray = mean_ray(msg->ranges, size/2, 2);
-    int ray_wideness = 30;
+    float orig_front_ray = mean_ray(msg->ranges, size/2, 4);
 
-    float left_ray = mean_ray(msg->ranges, size/2 + ray_wideness, 2);
-    float right_ray = mean_ray(msg->ranges, size/2 - ray_wideness, 2);
-
-    float view_convert = view.l/10;
-    float front_ray = orig_front_ray*view_convert;
-    left_ray = left_ray*view_convert;
-    right_ray = right_ray*view_convert;
-
-    float_point_t wall_a, wall_b;
-    wall_a.x = view.x;          wall_a.y = view.y;
-    wall_b.x = view.x + view.l; wall_b.y = view.y;
-    viz_line(wall_a, wall_b, VIEW_COLOR, 1);
-    float_point_t wall_middle;
-    wall_middle.x = (wall_a.x + wall_b.x)/2;
-    wall_middle.y = (wall_a.y + wall_b.y)/2;
-    viz_circle(wall_middle, 3, PATH_COLOR, 1);
-
-    float alpha = msg->angle_increment*ray_wideness;
-    float a = right_ray;
-    float b = left_ray;    
-    float d = front_ray;
-    float beta = asin( (b*sin(alpha)) / sqrt(b*b + d*d - 2*b*d*cos(alpha)));
-    if(beta != beta)
-        beta = 0;
-    if(b < a)
-        beta = M_PI/2 - (beta - M_PI/2);
-
-
-    float_point_t car_p;
-    car_p.x = wall_middle.x + cos(beta)*front_ray;
-    car_p.y = wall_middle.y + sin(beta)*front_ray;
-    viz_circle(car_p, 3, CAR_COLOR, 1);
-    viz_line(car_p, wall_middle, CAR_COLOR, 1);
-
-    float_point_t left_hit, right_hit;
-    float dira = points_angle_rad(car_p.x, car_p.y, wall_middle.x, wall_middle.y);
-    left_hit.x = car_p.x + cos(dira - alpha)*b;
-    left_hit.y = car_p.y + sin(dira - alpha)*b;
-    right_hit.x = car_p.x + cos(dira + alpha)*a;
-    right_hit.y = car_p.y + sin(dira + alpha)*a;
-    viz_line(car_p, left_hit, CAR_COLOR, 1);
-    viz_line(car_p, right_hit, CAR_COLOR, 1);
-
-    float angle = dira + M_PI/2;
     float wall_dist = orig_front_ray;
-    viz_text(view.x + view.l + 20, view.y +20, 20, VIEW_COLOR, "wall angle: %f", angle);
     viz_text(view.x + view.l + 20, view.y +40, 20, VIEW_COLOR, "wall dist: %f mt.", wall_dist);
 
     float throttle = 0;
-    float steer = points_angle(car_p.x, car_p.y, wall_middle.x, wall_middle.y);
-    steer != steer ? steer = 0 : steer = -fclamp(steer, -100, 100);
+    float steer = 0;
 
     run_test(throttle, steer, wall_dist, view);
 
@@ -238,25 +205,127 @@ void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
 
 
 void init_tests() {
-    test_num = 4; 
 
-    tests[0].throttle = 10;
-    tests[0].brake = -100;
-    tests[0].vels_n = 0;
-    
-    tests[1].throttle = 10;
-    tests[1].brake = -100;
-    tests[1].vels_n = 0;
+    const int REPEAT=3;
 
-    tests[2].throttle = 10;
-    tests[2].brake = -100;
-    tests[2].vels_n = 0;
-    
-    tests[3].throttle = 10;
-    tests[3].brake = -100;
-    tests[3].vels_n = 0;
+    int i = 0;
+    for(i; i< REPEAT; i++) {
+        tests[i].speed = 1;
+        tests[i].brake = -100;
+        tests[i].vels_n = 0;
+    }
+    for(i; i< REPEAT*2; i++) {
+        tests[i].speed = 1.5;
+        tests[i].brake = -100;
+        tests[i].vels_n = 0;
+    }
+    for(i; i< REPEAT*3; i++) {
+        tests[i].speed = 2;
+        tests[i].brake = -100;
+        tests[i].vels_n = 0;
+    }    
+    for(i; i< REPEAT*4; i++) {
+        tests[i].speed = 2.5;
+        tests[i].brake = -100;
+        tests[i].vels_n = 0;
+    }
+    for(i; i< REPEAT*5; i++) {
+        tests[i].speed = 3;
+        tests[i].brake = -100;
+        tests[i].vels_n = 0;
+    }
 
+    test_num = i; 
 }
+
+float update_lidar_speed(float dst, ros::Time time) {
+
+    static bool init=false;
+    const int VELS_DIM = 10;
+    static vels_t vels[VELS_DIM];
+    static int now = 0;
+
+    if(!init) {
+        for(int i=0; i< VELS_DIM; i++) {
+            vels[i].t = time;
+            vels[i].pos.x = 0;
+            vels[i].pos.y = dst; 
+	        vels[i].vel = 0;
+        }
+        init = true;
+    }
+    vels[now].pos.x = 0;
+    vels[now].pos.y = dst;
+    vels[now].t = time;
+
+    float speed = 0;
+    for(int i=1; i<VELS_DIM/2; i++) {
+        int idx = (now+i) % VELS_DIM;
+
+        double dx = 0;
+        double dy = vels[now].pos.y - vels[idx].pos.y;
+        double dst = sqrt(dx*dx + dy*dy);
+        double dt = (vels[now].t - vels[idx].t).toSec();
+
+        //sum for mean
+        speed += dst/dt;
+    }
+    speed /= (VELS_DIM/2 -1);
+   
+    vels[now].vel = speed;
+    now = (now+1) % VELS_DIM;
+
+    return speed;
+}
+
+float update_zed_speed(geometry_msgs::Point p, ros::Time time) {
+
+    static bool init=false;
+    const int VELS_DIM = 10;
+    static vels_t vels[VELS_DIM];
+    static int now = 0;
+
+    if(!init) {
+        for(int i=0; i< VELS_DIM; i++) {
+            vels[i].t = time;
+            vels[i].pos.x = p.x;
+            vels[i].pos.y = p.y; 
+	        vels[i].vel = 0;
+        }
+        init = true;
+    }
+    vels[now].pos.x = p.x;
+    vels[now].pos.y = p.y;
+    vels[now].t = time;
+
+    float speed = 0;
+    for(int i=1; i<VELS_DIM/2; i++) {
+        int idx = (now+i) % VELS_DIM;
+
+        double dx = vels[now].pos.x - vels[idx].pos.x;
+        double dy = vels[now].pos.y - vels[idx].pos.y;
+        double dst = sqrt(dx*dx + dy*dy);
+        double dt = (vels[now].t - vels[idx].t).toSec();
+
+        //sum for mean
+        speed += dst/dt;
+    }
+    speed /= (VELS_DIM/2 -1);
+   
+    vels[now].vel = speed;
+    now = (now+1) % VELS_DIM;
+
+    return speed;
+}
+
+/**
+    Odometry callback
+*/
+void odom_recv(const nav_msgs::Odometry::ConstPtr& msg) {
+
+    zed_speed = update_zed_speed(msg->pose.pose.position, msg->header.stamp);
+}
+
 
 
 int main(int argc, char **argv) {
@@ -265,8 +334,9 @@ int main(int argc, char **argv) {
 
     ros::NodeHandle n;
 
-    ros::Subscriber ssub = n.subscribe("scan", 1, laser_recv);
+    ros::Subscriber ssub = n.subscribe("scan", 1, laser_reciver);
     drive_pub = n.advertise<race::drive_param>("drive_parameters", 1);
+    ros::Subscriber osub = n.subscribe("zed/odom", 1, odom_recv);
 
     init_tests();
 
@@ -278,3 +348,6 @@ int main(int argc, char **argv) {
     viz_destroy();
     return 0;
 }
+
+
+
