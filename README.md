@@ -13,6 +13,10 @@ Compile instruction for ubuntu 14.04
 ```bash
 sudo apt install ros-indigo-urg* libzbar-dev liballegro5-dev
 ```
+- update your local "ros.h" file
+```bash
+sudo cp src/hack/ros.h /opt/ros/indigo/include/ros/ros.h 
+```
 
 - compile
 ```bash
