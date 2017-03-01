@@ -18,6 +18,9 @@
     #include "viz.h"
 #endif
 
+/**
+    Cost comparator class
+*/
 class node_comp {
     bool reverse;
 
@@ -34,6 +37,9 @@ public:
     }
 };
 
+/**
+    Fill an array of 3 nodes with the neightbours values
+*/
 void get_neighbours(node_t *node, node_t *nbrs, int num) {
 
     for(int i=0; i< 3; i++) {
@@ -60,15 +66,24 @@ void get_neighbours(node_t *node, node_t *nbrs, int num) {
     }
 }
 
+/**
+    Return a node id
+*/
 int node_id(grid_t &grid, node_t *n) {
     return n->pos.y*grid.size + n->pos.x;
 }
 
+/**
+    Priority queue specification
+*/
 class PQI : public std::priority_queue<node_t*, std::vector<node_t*>, node_comp> {
     public:
         std::vector<node_t*>& impl() { return c; }
 };
 
+/**
+    Compute A* pathfind on a grid matrix from s to e, passing near curve enter point
+*/
 path_t pathfinding(grid_t &grid, view_t &view, car_t &car, point_t &s, point_t &e, segment_t &curve) {
 
     PQI open;

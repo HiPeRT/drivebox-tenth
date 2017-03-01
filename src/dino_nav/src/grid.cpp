@@ -80,7 +80,8 @@ int grid_line(grid_t &grid, int x1, int y1, int x2, int y2, int value) {
 }
 
 /**
-    geterate a line in a matrix from point 1 to 2
+    Control if a line in a Matrix is possible to draw without using
+    filled cells.
 */
 bool grid_line_control(grid_t &grid, int x1, int y1, int x2, int y2) {
 
@@ -128,6 +129,9 @@ bool setgrid(grid_t &grid, int x, int y, int value) {
     return true;
 }
 
+/**
+    get a grid to value in given position
+*/
 int getgrid(grid_t &grid, int x, int y) {
     int pos = y*grid.size + x;
 
@@ -159,6 +163,9 @@ void inflate(grid_t &grid, int x, int y, int val, int n) {
     inflate(grid, x, y+1, val, n -1);
 }
 
+/**
+    convert matrix coords to screen position
+*/
 float_point_t grid2view(int x, int y, view_t &view) {
     float_point_t p;
     p.x = view.x + x*view.cell_l + view.cell_l/2;
@@ -166,7 +173,9 @@ float_point_t grid2view(int x, int y, view_t &view) {
     return p;
 }
 
-
+/**
+    convert sceen position to matrix coords
+*/
 point_t view2grid(float x, float y, view_t &view) {
     point_t p;
     p.x = (x - view.x)/view.cell_l;
