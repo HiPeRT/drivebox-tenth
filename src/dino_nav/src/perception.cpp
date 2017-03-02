@@ -9,11 +9,6 @@
     #include "viz.h"
 #endif
 
-extern dinonav_t nav;
-extern track_t track;
-extern float estimated_speed;
-extern float estimated_acc;
-
 void perception(dinonav_t &nav, const sensor_msgs::LaserScan::ConstPtr& msg) {
 
     discretize_laserscan(nav.grid, nav.view, nav.conf, msg);
