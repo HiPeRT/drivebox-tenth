@@ -7,13 +7,14 @@
 #endif
 
 #include "race/drive_param.h"
+#include "dino_nav/Stat.h"
+
 #include "sensor_msgs/LaserScan.h"
 #include "common.h"
 #include "dinonav.h"
-
-struct vquad_t {
-    float x, y, l;
-};
+#include "perception.h"
+#include "planning.h"
+#include "actuation.h"
 
 enum state_e { PREPARE, START, BRAKE, END };
 
@@ -30,8 +31,8 @@ struct test_t {
 } tests[MAX_TESTS];
 int test_num;
 
-ros::Publisher drive_pub;
-float zed_speed;
+extern ros::Publisher drive_pub, stat_pub;
+extern dinonav_t nav;
 
 const float START_DST = 12;
 const int MIN_DST = 2;
@@ -83,23 +84,26 @@ float mean_ray(std::vector<float> v, int idx, int l) {
     return sum/(l*2+1);
 }
 
-void run_test(float &throttle, float &steer, float wall_dist, vquad_t &view) {
+void run_test(float &throttle, float &steer, float wall_dist, view_t &view) {
 
     static float old_throttle;
 
     static state_e state = PREPARE;
 
     float lidar_speed = update_lidar_speed(wall_dist, ros::Time::now());
-    viz_text(view.x + view.l + 20, view.y +100, 18, VIEW_COLOR, "lidar speed: %f", lidar_speed);
-    viz_text(view.x + view.l + 20, view.y +120, 18, VIEW_COLOR, "zed speed:   %f", zed_speed);
+    float zed_speed = nav.estimated_speed;
+    //viz_text(view.x + view.l + 20, view.y +100, 18, VIEW_COLOR, "lidar speed: %f", lidar_speed);
+    //viz_text(view.x + view.l + 20, view.y +120, 18, VIEW_COLOR, "zed speed:   %f", zed_speed);
     
     static int n =0;
-    if(n<100) {
-        n++;
-        if(n == 99)
-            printf("test 0 PREPARE\n");
+    n++;
+    if(n<100)
         return;
-    } 
+    if(n == 100)
+        printf("test 0 PREPARE\n");
+    if(n%100 == 0)
+        printf("current dst = %f\n", wall_dist);
+
 
     static int current_test = 0;
 
@@ -177,31 +181,61 @@ void run_test(float &throttle, float &steer, float wall_dist, vquad_t &view) {
 void laser_reciver(const sensor_msgs::LaserScan::ConstPtr& msg) {
      
     viz_clear();
-    vquad_t view;
-    view.x = 10;
-    view.y = 10;
-    view.l = 200;
 
-    int size = msg->ranges.size();
-    float orig_front_ray = mean_ray(msg->ranges, size/2, 4);
+    //ROS_INFO("Scan recived: [%f]", msg->scan_time);
+    nav.conf.grid_dim = 500;
+    init(nav.view, nav.car, nav.grid);
+    
+    perception(nav, msg);
 
-    float wall_dist = orig_front_ray;
-    viz_text(view.x + view.l + 20, view.y +40, 20, VIEW_COLOR, "wall dist: %f mt.", wall_dist);
+    draw_car(nav.view, nav.car);
+    draw_grid(nav.grid, nav.view);   
+
+    float wall_y = 0;   
+    int idx = nav.grid.middle_id;
+    int l = 5; 
+    for(int i=idx-l; i<=idx+l; i++)
+        wall_y += float(nav.grid.points[i].y);
+    wall_y /= (l*2+1);
+    
+    float_point_t cp = grid2view(nav.car_pos.x, nav.car_pos.y, nav.view);
+    float_point_t gp = grid2view(nav.car_pos.x, wall_y, nav.view);
+    float wall_dist = point_dst(cp, gp)/nav.car.width*0.29;
+  
+    viz_line(cp, gp, PATH_COLOR, 1);
+    viz_text(cp.x + 5, (cp.y + gp.y)/2, 15, VIEW_COLOR, "%f", wall_dist);
 
     float throttle = 0;
     float steer = 0;
+    run_test(throttle, steer, wall_dist, nav.view);
 
-    run_test(throttle, steer, wall_dist, view);
+    race::drive_param drive_msg;
+    drive_msg.angle = 0;
+    drive_msg.velocity = throttle;
+    drive_pub.publish(drive_msg);
 
-    viz_text(view.x + view.l + 20, view.y +60, 20, VIEW_COLOR, "steer: %f", steer);
-    viz_text(view.x + view.l + 20, view.y +80, 20, VIEW_COLOR, "throttle: %f", throttle);
-
-    race::drive_param m;
-    m.velocity = throttle;
-    m.angle = steer;
-    drive_pub.publish(m);
-
+    draw_drive_params(nav.view, drive_msg.velocity, drive_msg.angle, 
+        nav.estimated_speed, nav.estimated_acc, nav.target_acc);
     viz_flip();
+
+    //PUB stats for viewer
+    dino_nav::Stat stat;
+    stat.car_w = nav.car.width;
+    stat.car_l = nav.car.length;
+
+    stat.grid_size = nav.grid.size;
+    std::vector<signed char> vgrd(nav.grid.data, nav.grid.data+(nav.grid.size*nav.grid.size));
+    stat.grid = vgrd;
+    stat.zoom = nav.conf.zoom;
+
+    stat.steer_l = 0;
+    stat.throttle = drive_msg.velocity;
+    stat.steer = drive_msg.angle;
+    stat.speed = nav.estimated_speed;
+    stat.acc = nav.estimated_acc;
+    geometry_msgs::Pose pose;
+    stat.pose = pose;
+    stat_pub.publish(stat);
 }
 
 
@@ -239,6 +273,34 @@ void init_tests() {
     test_num = i; 
 }
 
+
+int main(int argc, char **argv) {
+
+    ros::init(argc, argv, "dinonav");
+
+    ros::NodeHandle n;
+
+    ros::Subscriber ssub = n.subscribe("scan", 1, laser_reciver);
+    ros::Subscriber osub = n.subscribe("zed/odom", 1, odom_recv);
+    drive_pub = n.advertise<race::drive_param>("drive_parameters", 1);
+    stat_pub = n.advertise<dino_nav::Stat>("dinonav/stat", 1);          //stats for viewer
+
+    dynamic_reconfigure::Server<dino_nav::DinonavConfig> server;
+    dynamic_reconfigure::Server<dino_nav::DinonavConfig>::CallbackType f;
+    f = boost::bind(&reconf, _1, _2);
+    server.setCallback(f);
+
+    init_tests();
+
+    viz_init(1000,700);
+    while(ros::ok() && viz_update()) {
+        ros::spinOnce();
+    }
+
+    viz_destroy();
+    return 0;
+}
+
 float update_lidar_speed(float dst, ros::Time time) {
 
     static bool init=false;
@@ -250,53 +312,13 @@ float update_lidar_speed(float dst, ros::Time time) {
         for(int i=0; i< VELS_DIM; i++) {
             vels[i].t = time;
             vels[i].pos.x = 0;
-            vels[i].pos.y = dst; 
-	        vels[i].vel = 0;
+            vels[i].pos.y = 0; 
+	    vels[i].vel = 0;
         }
         init = true;
     }
     vels[now].pos.x = 0;
     vels[now].pos.y = dst;
-    vels[now].t = time;
-
-    float speed = 0;
-    for(int i=1; i<VELS_DIM/2; i++) {
-        int idx = (now+i) % VELS_DIM;
-
-        double dx = 0;
-        double dy = vels[now].pos.y - vels[idx].pos.y;
-        double dst = sqrt(dx*dx + dy*dy);
-        double dt = (vels[now].t - vels[idx].t).toSec();
-
-        //sum for mean
-        speed += dst/dt;
-    }
-    speed /= (VELS_DIM/2 -1);
-   
-    vels[now].vel = speed;
-    now = (now+1) % VELS_DIM;
-
-    return speed;
-}
-
-float update_zed_speed(geometry_msgs::Point p, ros::Time time) {
-
-    static bool init=false;
-    const int VELS_DIM = 10;
-    static vels_t vels[VELS_DIM];
-    static int now = 0;
-
-    if(!init) {
-        for(int i=0; i< VELS_DIM; i++) {
-            vels[i].t = time;
-            vels[i].pos.x = p.x;
-            vels[i].pos.y = p.y; 
-	        vels[i].vel = 0;
-        }
-        init = true;
-    }
-    vels[now].pos.x = p.x;
-    vels[now].pos.y = p.y;
     vels[now].t = time;
 
     float speed = 0;
@@ -312,43 +334,9 @@ float update_zed_speed(geometry_msgs::Point p, ros::Time time) {
         speed += dst/dt;
     }
     speed /= (VELS_DIM/2 -1);
-   
-    vels[now].vel = speed;
+
+    vels[now].vel = nav.estimated_speed;
     now = (now+1) % VELS_DIM;
 
     return speed;
 }
-
-/**
-    Odometry callback
-*/
-void odom_recv(const nav_msgs::Odometry::ConstPtr& msg) {
-
-    zed_speed = update_zed_speed(msg->pose.pose.position, msg->header.stamp);
-}
-
-
-
-int main(int argc, char **argv) {
-
-    ros::init(argc, argv, "dinonav");
-
-    ros::NodeHandle n;
-
-    ros::Subscriber ssub = n.subscribe("scan", 1, laser_reciver);
-    drive_pub = n.advertise<race::drive_param>("drive_parameters", 1);
-    ros::Subscriber osub = n.subscribe("zed/odom", 1, odom_recv);
-
-    init_tests();
-
-    viz_init(700,700);
-    while(ros::ok() && viz_update()) {
-        ros::spinOnce();
-    }
-
-    viz_destroy();
-    return 0;
-}
-
-
-

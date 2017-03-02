@@ -50,7 +50,8 @@ add_dependencies(dinonav race_generate_messages)
 target_link_libraries(dinonav ${catkin_LIBRARIES} ${ALLEGRO5_LIBRARIES} ${ALLEGRO_PRIMITIVES_LIBRARIES}
                               ${ALLEGRO_TTF_LIBRARIES} ${TinyXML_LIBRARIES})
 
-add_executable(brake_test src/brake_test.cpp src/viz.cpp src/common.cpp)
+add_executable(brake_test src/brake_test.cpp src/viz.cpp src/common.cpp  src/dinonav.cpp
+  src/perception.cpp src/planning.cpp src/actuation.cpp src/pathfind.cpp src/common.cpp src/grid.cpp)
 add_dependencies(brake_test ${PROJECT_NAME}_gencfg)
 add_dependencies(brake_test ${PROJECT_NAME}_generate_messages)
 add_dependencies(brake_test race_generate_messages)
