@@ -183,6 +183,7 @@ void laser_reciver(const sensor_msgs::LaserScan::ConstPtr& msg) {
      
     viz_clear();
 
+    ros::WallTime time_debug = ros::WallTime::now(); //time record
     //ROS_INFO("Scan recived: [%f]", msg->scan_time);
     nav.conf.grid_dim = 800;
     nav.conf.zoom = 3.0;
@@ -219,6 +220,17 @@ void laser_reciver(const sensor_msgs::LaserScan::ConstPtr& msg) {
     draw_drive_params(nav.view, drive_msg.velocity, drive_msg.angle, 
         nav.estimated_speed, nav.estimated_acc, nav.target_acc);
     viz_flip();
+
+    //check if the computation was taken in more than 0.025 secs
+    double time = (ros::WallTime::now() - time_debug).toSec();
+    #ifndef TIME_PROFILER
+    if(time >= 1/40.0f)
+        printf("iter time exceded: %lf\n", time);
+    #else
+        double start = time_debug.toSec();
+        double end = start + time;
+        printf("DINONAV %lf %lf %lf\n", start, end, time);
+    #endif
 
     //PUB stats for viewer
     dino_nav::Stat stat;
