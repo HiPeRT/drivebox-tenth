@@ -200,7 +200,7 @@ void laser_reciver(const sensor_msgs::LaserScan::ConstPtr& msg) {
     
     float_point_t cp = grid2view(nav.car_pos.x, nav.car_pos.y, nav.view);
     float_point_t gp = grid2view(nav.car_pos.x, wall_y, nav.view);
-    float wall_dist = point_dst(cp, gp)/nav.car.width*0.29;
+    float wall_dist = point_dst(cp, gp)*((nav.conf.zoom*2)/nav.view.l);
   
     viz_line(cp, gp, PATH_COLOR, 1);
     viz_text(cp.x + 5, (cp.y + gp.y)/2, 15, VIEW_COLOR, "%f", wall_dist);
