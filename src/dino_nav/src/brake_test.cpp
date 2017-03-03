@@ -137,7 +137,7 @@ void run_test(float &throttle, float &steer, float wall_dist, view_t &view) {
 	        printf("emergency brake");
 	    } else if(lidar_speed < test->speed) {
             throttle = old_throttle;
-            old_throttle += 0.3;
+            old_throttle += 0.7;
 
             if(throttle > 100)
                 throttle = 100;
@@ -183,7 +183,8 @@ void laser_reciver(const sensor_msgs::LaserScan::ConstPtr& msg) {
     viz_clear();
 
     //ROS_INFO("Scan recived: [%f]", msg->scan_time);
-    nav.conf.grid_dim = 500;
+    nav.conf.grid_dim = 400;
+    nav.conf.zoom = 5.0;
     init(nav.view, nav.car, nav.grid);
     
     perception(nav, msg);
