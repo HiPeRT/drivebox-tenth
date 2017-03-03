@@ -3,7 +3,7 @@
 #include <std_msgs/String.h>
 #include <std_msgs/Int32.h>
 #include <std_msgs/Empty.h>
-#include <race/drive_values.h>
+#include <race/drive_param.h>
 ros::NodeHandle  nh;
 
 
@@ -45,17 +45,18 @@ void writepwm(int pwm_angle, int pwm_drive)
 }
 
 
-void messageDrive( const race::drive_values& pwm )
+void messageDrive( const race::drive_param& par )
 {
   if (manual)
     return;
   
   if (flagStop == false) {
-    str_msg.data = pwm.pwm_drive;
-    chatter.publish( &str_msg );
+    int16_t pwm_drive = map(par.velocity,-100,100,6554,13108);
+    int16_t pwm_angle = map(par.angle,-100,100,6554,13108);
+    writepwm(pwm_angle, pwm_drive);
+    //str_msg.data = pwm_drive;
+    //chatter.publish( &str_msg );
 
-    writepwm(pwm.pwm_angle, pwm.pwm_drive);
-  
   } else {
     analogWrite(5, pwm_center_value);
     analogWrite(6, pwm_center_value);
@@ -76,7 +77,7 @@ void messageEmergencyStop( const std_msgs::Bool& flag )
 }
 
 
-ros::Subscriber<race::drive_values> sub_drive("drive_pwm", &messageDrive );
+ros::Subscriber<race::drive_param> sub_drive("drive_parameters", &messageDrive );
 ros::Subscriber<std_msgs::Bool> sub_stop("eStop", &messageEmergencyStop );
 
 void setup() {

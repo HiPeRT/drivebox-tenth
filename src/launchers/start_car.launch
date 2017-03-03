@@ -5,7 +5,7 @@
 	<include file="$(find razor_imu_9dof)/launch/razor-pub.launch" />
 
 	<node pkg="rosserial_python" type="serial_node.py" args="/dev/ttyACM0" name="serial" />
-	<node pkg="race" type="talker.py" name="talker" />
+<!--	<node pkg="race" type="talker.py" name="talker" /> -->
 <!--	<node pkg="race" type="keyboard.py" name="keybord" output="screen" /> -->
 
 	<node pkg="urg_node" type="urg_node" args="_ip_address:=192.168.1.11" name="laser_node" output="log"/>
