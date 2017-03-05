@@ -21,6 +21,7 @@ void perception(dinonav_t &nav, const sensor_msgs::LaserScan::ConstPtr& msg) {
 
 void discretize_laserscan(grid_t &grid, view_t &view, conf_t &conf, const sensor_msgs::LaserScan::ConstPtr& msg) {
 
+
     int quad_l = conf.zoom*2;
     int size = msg->ranges.size();
     double angle = msg->angle_max + M_PI*3/2;

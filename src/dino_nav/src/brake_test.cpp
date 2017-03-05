@@ -16,6 +16,7 @@
 #include "planning.h"
 #include "actuation.h"
 
+
 enum state_e { PREPARE, START, BRAKE, END };
 
 float update_lidar_speed(float dst, ros::Time time);
@@ -183,8 +184,8 @@ void laser_reciver(const sensor_msgs::LaserScan::ConstPtr& msg) {
     viz_clear();
 
     //ROS_INFO("Scan recived: [%f]", msg->scan_time);
-    nav.conf.grid_dim = 400;
-    nav.conf.zoom = 5.0;
+    nav.conf.grid_dim = 800;
+    nav.conf.zoom = 3.0;
     init(nav.view, nav.car, nav.grid);
     
     perception(nav, msg);
