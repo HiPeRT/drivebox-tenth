@@ -19,10 +19,11 @@
 #include "planning.h"
 #include "actuation.h"
 
-
 #include "dino_nav/Stat.h"
 #include "race/drive_param.h"
 #include "std_msgs/Float32.h"
+
+#define PTIME_INTER(N)  PTIME_END(); PTIME_STAMP(,N); PTIME_START()
 
 ros::Publisher drive_pub, stat_pub;
 
@@ -79,27 +80,29 @@ void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
 
     //ROS_INFO("Scan recived: [%f]", msg->scan_time);
     ros::WallTime time_debug = ros::WallTime::now(); //time record
+    PTIME_INIT()
+    PTIME_START()
 
     init(nav.view, nav.car, nav.grid);
-    
-    perception(nav, msg);
+    perception(nav, msg);                   PTIME_INTER(PERCEPTION)
 
     draw_car(nav.view, nav.car);
     draw_grid(nav.grid, nav.view);   
 
-    planning(nav);
+    planning(nav);                          PTIME_INTER(PLANNING)
     
     draw_yaw(nav.yaw, nav.view); 
     draw_track(nav.track, nav.view);
     draw_path(nav.path);
 
     race::drive_param drive_msg;
-    actuation(nav, drive_msg);
+    actuation(nav, drive_msg);              PTIME_INTER(ACTUATION)
+
     //limit throttle
     nav.throttle = fclamp(nav.throttle, -100, nav.conf.throttle); 
     if(nav.conf.enable) 
         drive_pub.publish(drive_msg);
-    draw_drive_params(nav.view, nav.throttle, nav.steer, nav.estimated_speed, nav.estimated_acc, nav.target_acc);
+    draw_drive_params(nav.view, nav.throttle, nav.steer, nav.estimated_speed, nav.estimated_acc, nav.target_acc);    
 
     //check if the computation was taken in more than 0.025 secs
     double time = (ros::WallTime::now() - time_debug).toSec();
