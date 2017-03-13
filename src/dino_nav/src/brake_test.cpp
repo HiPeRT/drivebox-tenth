@@ -283,6 +283,31 @@ void init_tests() {
         tests[i].brake = -100;
         tests[i].vels_n = 0;
     }
+    for(i; i< REPEAT*6; i++) {
+        tests[i].speed = 3.5;
+        tests[i].brake = -100;
+        tests[i].vels_n = 0;
+    }
+    for(i; i< REPEAT*7; i++) {
+        tests[i].speed = 4;
+        tests[i].brake = -100;
+        tests[i].vels_n = 0;
+    }
+    for(i; i< REPEAT*8; i++) {
+        tests[i].speed = 4.5;
+        tests[i].brake = -100;
+        tests[i].vels_n = 0;
+    }    
+    for(i; i< REPEAT*9; i++) {
+        tests[i].speed = 5;
+        tests[i].brake = -100;
+        tests[i].vels_n = 0;
+    }
+    for(i; i< REPEAT*10; i++) {
+        tests[i].speed = 5.5;
+        tests[i].brake = -100;
+        tests[i].vels_n = 0;
+    }
 
     test_num = i; 
 }
