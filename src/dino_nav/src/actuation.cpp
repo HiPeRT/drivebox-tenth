@@ -115,6 +115,7 @@ float calc_throttle(view_t &view, car_t &car, track_t &track, segment_t &curve,
     float curve_speed = 1.2f;
     target_acc = 0;
     
+    curve_dst -= 1;
     if(curve_dst >0 && curve_dst < estimated_speed*2) {
         float v_diff = curve_speed - estimated_speed;
         target_acc = (v_diff*v_diff + 2*estimated_speed*v_diff) / (2*curve_dst);
