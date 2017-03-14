@@ -28,7 +28,7 @@ void actuation(dinonav_t &nav, race::drive_param &drive_msg) {
         viz_line(enter, exit, CAR_COLOR, 1);
         
         nav.curve_dst = point_dst(start, enter);
-        nav.curve_dst = nav.curve_dst/nav.car.width*0.29;
+        nav.curve_dst = nav.curve_dst*((nav.conf.zoom*2)/nav.view.l);
         viz_text((start.x + enter.x)/2, (start.y + enter.y)/2, 10, RGBA(1,0,1,1), "  %f", nav.curve_dst);
     } else {
         viz_circle(exit, 4, CAR_COLOR, 1);
@@ -112,7 +112,7 @@ float calc_throttle(view_t &view, car_t &car, track_t &track, segment_t &curve,
     float curve_dst, float estimated_speed, float estimated_acc, float &target_acc) {
 
     static float throttle = 0;
-    float curve_speed = 1.7f;
+    float curve_speed = 1.2f;
     target_acc = 0;
     
     if(curve_dst >0 && curve_dst < estimated_speed*2) {
@@ -124,9 +124,12 @@ float calc_throttle(view_t &view, car_t &car, track_t &track, segment_t &curve,
 
         float a_diff = (target_acc - estimated_acc);
         if(a_diff >0)
-            throttle += a_diff/4;
+            throttle += a_diff;
         else
-            throttle += a_diff*2; 
+            throttle += a_diff*estimated_speed*estimated_speed; 
+
+        if(estimated_speed < curve_speed && throttle < 0)
+            throttle = 10;
     } else {
         if(throttle < 0)
             throttle = 0;
@@ -136,7 +139,6 @@ float calc_throttle(view_t &view, car_t &car, track_t &track, segment_t &curve,
     if(throttle != throttle)
         throttle = 0;
     throttle = fclamp(throttle, -100, 100);
-
 
     static int in_curve = 0;
     float_point_t pos;
