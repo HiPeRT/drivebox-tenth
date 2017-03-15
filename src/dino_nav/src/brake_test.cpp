@@ -35,8 +35,11 @@ int test_num;
 extern ros::Publisher drive_pub, stat_pub;
 extern dinonav_t nav;
 
-const float START_DST = 12;
+const float BRK_DST = 10;
 const int MIN_DST = 2;
+float target_throttle = 0;
+
+bool KILL = false;
 
 void print_tests(float_point_t pos, int cur_test) {
 
@@ -87,8 +90,7 @@ float mean_ray(std::vector<float> v, int idx, int l) {
 
 void run_test(float &throttle, float &steer, float wall_dist, view_t &view) {
 
-    static float old_throttle;
-
+    static float old_throttle = 0;
     static state_e state = PREPARE;
 
     float lidar_speed = update_lidar_speed(wall_dist, ros::Time::now());
@@ -119,34 +121,29 @@ void run_test(float &throttle, float &steer, float wall_dist, view_t &view) {
     switch(state) {
 
     case PREPARE:
-      viz_text(view.x + view.l + 20, view.y +140, 15, VIEW_COLOR, "test %d status: PREPARE", current_test);
-        if(wall_dist < START_DST) {
-            throttle = 0;
-            steer = -steer;
-        } else {
-            state = START;
-            test->start = wall_dist;
-            printf("test %d START\n", current_test);
-            old_throttle = 0;
-        }
+        viz_text(view.x + view.l + 20, view.y +140, 15, VIEW_COLOR, "test %d status: PREPARE", current_test);
+        test->start = wall_dist;
+        printf("test throttle %f\n", target_throttle);
+        state = START;
+        old_throttle = 0;
+    
         break;
 
     case START:
       viz_text(view.x + view.l + 20, view.y +140, 15, VIEW_COLOR, "test %d status: START", current_test);
         if(wall_dist < MIN_DST) {
-	        throttle = -100;
+	        state = BRAKE;
 	        printf("emergency brake");
-	    } else if(lidar_speed < test->speed) {
-            throttle = old_throttle;
-            old_throttle += 0.7;
-
-            if(throttle > 100)
-                throttle = 100;
-        } else {
+	    } 
+        if(wall_dist < BRK_DST) {
             state = BRAKE;
             test->brake_start = wall_dist;
             test->speed_reached = lidar_speed;
             printf("test %d BRAKE\n", current_test);
+        } else {
+            if(old_throttle < test->speed)
+                old_throttle += 0.7;
+            throttle = old_throttle;
         }
         break;
 
@@ -164,6 +161,7 @@ void run_test(float &throttle, float &steer, float wall_dist, view_t &view) {
             } else {
                 state = END;
                 printf("ALL TEST ENDED\n");
+                KILL= true;
             }
         }
         break;
@@ -196,7 +194,7 @@ void laser_reciver(const sensor_msgs::LaserScan::ConstPtr& msg) {
 
     float wall_y = 0;   
     int idx = nav.grid.middle_id;
-    int l = 5; 
+    int l = 10; 
     for(int i=idx-l; i<=idx+l; i++)
         wall_y += float(nav.grid.points[i].y);
     wall_y /= (l*2+1);
@@ -254,68 +252,15 @@ void laser_reciver(const sensor_msgs::LaserScan::ConstPtr& msg) {
 
 
 void init_tests() {
-
-    const int REPEAT=3;
-
-    int i = 0;
-    for(i; i< REPEAT; i++) {
-        tests[i].speed = 1;
-        tests[i].brake = -100;
-        tests[i].vels_n = 0;
-    }
-    for(i; i< REPEAT*2; i++) {
-        tests[i].speed = 1.5;
-        tests[i].brake = -100;
-        tests[i].vels_n = 0;
-    }
-    for(i; i< REPEAT*3; i++) {
-        tests[i].speed = 2;
-        tests[i].brake = -100;
-        tests[i].vels_n = 0;
-    }    
-    for(i; i< REPEAT*4; i++) {
-        tests[i].speed = 2.5;
-        tests[i].brake = -100;
-        tests[i].vels_n = 0;
-    }
-    for(i; i< REPEAT*5; i++) {
-        tests[i].speed = 3;
-        tests[i].brake = -100;
-        tests[i].vels_n = 0;
-    }
-    for(i; i< REPEAT*6; i++) {
-        tests[i].speed = 3.5;
-        tests[i].brake = -100;
-        tests[i].vels_n = 0;
-    }
-    for(i; i< REPEAT*7; i++) {
-        tests[i].speed = 4;
-        tests[i].brake = -100;
-        tests[i].vels_n = 0;
-    }
-    for(i; i< REPEAT*8; i++) {
-        tests[i].speed = 4.5;
-        tests[i].brake = -100;
-        tests[i].vels_n = 0;
-    }    
-    for(i; i< REPEAT*9; i++) {
-        tests[i].speed = 5;
-        tests[i].brake = -100;
-        tests[i].vels_n = 0;
-    }
-    for(i; i< REPEAT*10; i++) {
-        tests[i].speed = 5.5;
-        tests[i].brake = -100;
-        tests[i].vels_n = 0;
-    }
-
-    test_num = i; 
+    test_num = 1; 
 }
 
 
 int main(int argc, char **argv) {
 
     ros::init(argc, argv, "dinonav");
+
+    target_throttle = atoi(argv[1]);
 
     ros::NodeHandle n;
 
@@ -332,7 +277,7 @@ int main(int argc, char **argv) {
     init_tests();
 
     viz_init(1000,700);
-    while(ros::ok() && viz_update()) {
+    while(!KILL && ros::ok() && viz_update()) {
         ros::spinOnce();
     }
 
