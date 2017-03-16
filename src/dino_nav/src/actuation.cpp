@@ -112,25 +112,12 @@ float calc_throttle(view_t &view, car_t &car, track_t &track, segment_t &curve,
     float curve_dst, float estimated_speed, float estimated_acc, float &target_acc) {
 
     static float throttle = 0;
-    float curve_speed = 1.2f;
-    target_acc = 0;
-    
+    float curve_speed = 1.0f;
+        
     curve_dst -= 1;
-    if(curve_dst >0 && curve_dst < estimated_speed*2) {
-        float v_diff = curve_speed - estimated_speed;
-        target_acc = (v_diff*v_diff + 2*estimated_speed*v_diff) / (2*curve_dst);
-
-        if(throttle < 0 && target_acc > estimated_acc)
-            throttle = 0;
-
-        float a_diff = (target_acc - estimated_acc);
-        if(a_diff >0)
-            throttle += a_diff;
-        else
-            throttle += a_diff*estimated_speed*estimated_speed; 
-
-        if(estimated_speed < curve_speed && throttle < 0)
-            throttle = 10;
+    float min_dist = (estimated_speed*estimated_speed - curve_speed*curve_speed) / (2 * 4);
+    if(curve_dst >0 && curve_dst < min_dist && estimated_speed > curve_speed) {
+        throttle = -100;
     } else {
         if(throttle < 0)
             throttle = 0;
@@ -144,19 +131,19 @@ float calc_throttle(view_t &view, car_t &car, track_t &track, segment_t &curve,
     static int in_curve = 0;
     float_point_t pos;
     pos.x = view.x + view.l/2;
-    pos.y = view.y + view.l - car.length*1;
+    pos.y = view.y + view.l - 50 - car.length*1;
     
     if(point_is_front(curve, pos)*curve.dir > 0) {
         viz_line(curve.a, curve.b, RGBA(1,0,0,1), 3);
-        in_curve++;
-    } else {
+    } else if(curve_dst +1 > 0 && curve_dst +1 < 1) {
         viz_line(curve.a, curve.b, RGBA(0,1,0,1), 3);
-        if(in_curve >20) {
-            //curve++
+        if(in_curve < 0) {
+            printf("curve passed\n");
             track.cur_sect = (track.cur_sect +1) % track.sects_n;
-            in_curve = 0;
+            in_curve = 15;
         }
     }
+    in_curve--;
 
     return throttle;
 }

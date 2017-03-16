@@ -93,7 +93,7 @@ int main(int argc, char **argv) {
     if(!load_track(path.c_str()))
         return -1;
 
-    viz_init(700,700);
+    viz_init(900,700);
     while(ros::ok() && viz_update()) {
         ros::spinOnce();
     }

@@ -335,7 +335,7 @@ void draw_yaw(float yaw, view_t &view) {
 void draw_car(view_t &view, car_t &car) {
     float_point_t o;
     o.x = view.x + view.cell_l/2 + view.l/2 - car.width/2;
-    o.y = view.y + view.l - car.length;
+    o.y = view.y + view.l -50 - car.length;
     viz_rect(o, car.width, car.length, CAR_COLOR,1);
 }
 

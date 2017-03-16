@@ -102,7 +102,7 @@ void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
     nav.throttle = fclamp(nav.throttle, -100, nav.conf.throttle); 
     if(nav.conf.enable) 
         drive_pub.publish(drive_msg);
-    draw_drive_params(nav.view, nav.throttle, nav.steer, nav.estimated_speed, nav.estimated_acc, nav.target_acc);    
+    draw_drive_params(nav.view, nav.throttle, nav.steer, nav.estimated_speed, nav.estimated_acc, 0);    
 
     //check if the computation was taken in more than 0.025 secs
     double time = (ros::WallTime::now() - time_debug).toSec();
