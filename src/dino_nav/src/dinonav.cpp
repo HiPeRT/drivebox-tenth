@@ -40,7 +40,10 @@ void reconf(dino_nav::DinonavConfig &config, uint32_t level) {
   nav.conf.inflation = config.inflation;
   nav.conf.grid_dim = config.grid_dim;
   nav.conf.zoom = config.zoom;
+  nav.conf.ahead_offset = config.ahead_offset;
   nav.conf.enable = config.enable;
+  nav.conf.curve_speed = config.curve_speed;
+  nav.conf.car_decel = config.car_decel;
 }
 
 void init_view(view_t &view, int size) {
@@ -86,7 +89,7 @@ void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
     init(nav.view, nav.car, nav.grid);
     perception(nav, msg);                   PTIME_INTER(PERCEPTION)
 
-    draw_car(nav.view, nav.car);
+    draw_car(nav.conf, nav.view, nav.car);
     draw_grid(nav.grid, nav.view);   
 
     planning(nav);                          PTIME_INTER(PLANNING)

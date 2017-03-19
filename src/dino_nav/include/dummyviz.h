@@ -33,7 +33,7 @@
 #define draw_grid(grid, view)                                           ;
 #define draw_track(track, view)                                         ;
 #define draw_yaw(yaw, view)                                             ;
-#define draw_car(view, car)                                             ;
+#define draw_car(conf, view, car)                                       ;
 #define draw_path(path)                                                 ;
 
 #endif //DUMMYVIZ_H

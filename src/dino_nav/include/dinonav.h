@@ -16,7 +16,10 @@ struct conf_t {
     int     inflation;
     int     grid_dim;
     float   zoom;
+    int     ahead_offset;
     bool    enable;
+    float   curve_speed;
+    float   car_decel;
 };
 
 const int EMPTY     = 0;

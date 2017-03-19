@@ -41,7 +41,7 @@ void draw_drive_params(view_t &view, float throttle, float steer, float speed, f
 void draw_grid(grid_t &grid, view_t &view);
 void draw_track(track_t &track, view_t &view);
 void draw_yaw(float yaw, view_t &view);
-void draw_car(view_t &view, car_t &car);
+void draw_car(conf_t &conf, view_t &view, car_t &car);
 void draw_path(path_t &path);
 
 #endif //VIZ_H

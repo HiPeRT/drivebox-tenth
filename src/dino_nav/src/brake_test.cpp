@@ -189,7 +189,7 @@ void laser_reciver(const sensor_msgs::LaserScan::ConstPtr& msg) {
     
     perception(nav, msg);
 
-    draw_car(nav.view, nav.car);
+    draw_car(nav.conf, nav.view, nav.car);
     draw_grid(nav.grid, nav.view);   
 
     float wall_y = 0;   

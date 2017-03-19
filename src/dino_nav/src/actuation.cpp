@@ -36,7 +36,7 @@ void actuation(dinonav_t &nav, race::drive_param &drive_msg) {
 
     nav.steer = calc_steer(start, nav.view, nav.car, nav.grid, nav.path, nav.steer_l);
 
-    nav.throttle = calc_throttle(nav.view, nav.car, nav.track, nav.curve, 
+    nav.throttle = calc_throttle(nav.conf, nav.view, nav.car, nav.track, nav.curve, 
         nav.curve_dst, nav.estimated_speed, nav.estimated_acc, nav.target_acc);
     
     if(nav.throttle > nav.conf.throttle)
@@ -108,14 +108,14 @@ float calc_steer(float_point_t &start, view_t &view, car_t &car, grid_t &grid, p
 }
 
 
-float calc_throttle(view_t &view, car_t &car, track_t &track, segment_t &curve, 
+float calc_throttle(conf_t &conf, view_t &view, car_t &car, track_t &track, segment_t &curve, 
     float curve_dst, float estimated_speed, float estimated_acc, float &target_acc) {
 
     static float throttle = 0;
-    float curve_speed = 1.0f;
+    float curve_speed = conf.curve_speed;
         
     curve_dst -= 1;
-    float min_dist = (estimated_speed*estimated_speed - curve_speed*curve_speed) / (2 * 4);
+    float min_dist = (estimated_speed*estimated_speed - curve_speed*curve_speed) / (2 * conf.car_decel);
     if(curve_dst >0 && curve_dst < min_dist && estimated_speed > curve_speed) {
         throttle = -100;
     } else {
@@ -131,7 +131,7 @@ float calc_throttle(view_t &view, car_t &car, track_t &track, segment_t &curve,
     static int in_curve = 0;
     float_point_t pos;
     pos.x = view.x + view.l/2;
-    pos.y = view.y + view.l - 50 - car.length*1;
+    pos.y = view.y + view.l - conf.ahead_offset - car.length*1;
     
     if(point_is_front(curve, pos)*curve.dir > 0) {
         viz_line(curve.a, curve.b, RGBA(1,0,0,1), 3);
