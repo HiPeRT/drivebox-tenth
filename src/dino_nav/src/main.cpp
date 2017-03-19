@@ -75,6 +75,7 @@ int main(int argc, char **argv) {
     ros::Subscriber ssub = n.subscribe("scan", 1, laser_recv);          //lidar
     ros::Subscriber psub = n.subscribe("pose_stamped", 1, pose_recv);   //pose from lidar
     ros::Subscriber osub = n.subscribe("zed/odom", 1, odom_recv);       //odometry from zed
+    ros::Subscriber tssub = n.subscribe("track_zone", 1, track_zone_recv); //track zone reset
 
     drive_pub = n.advertise<race::drive_param>("drive_parameters", 1);  //param for move
     stat_pub = n.advertise<dino_nav::Stat>("dinonav/stat", 1);          //stats for viewer
@@ -89,7 +90,7 @@ int main(int argc, char **argv) {
     //!!! ALL CALLBACK FUNCTIONS ARE ON dinonav.cpp !!!
 
     std::string path = ros::package::getPath("dino_nav");
-    path = path + "/tracks/fca.xml";
+    path = path + "/tracks/city.xml";
     if(!load_track(path.c_str()))
         return -1;
 

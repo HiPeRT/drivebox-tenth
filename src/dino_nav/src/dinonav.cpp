@@ -209,4 +209,12 @@ void odom_recv(const nav_msgs::Odometry::ConstPtr& msg) {
     tf::Matrix3x3(q).getRPY(roll, pitch, nav.yaw);
 }
 
+/** 
+    Track zone reset callback
+*/
+void track_zone_recv(const std_msgs::Int32::ConstPtr &msg) {
+
+    nav.track.cur_sect = msg->data;
+    printf("track zone reset to %d\n", msg->data);
+}
 

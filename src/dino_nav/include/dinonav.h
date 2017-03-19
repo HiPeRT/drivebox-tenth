@@ -5,6 +5,7 @@
 #include "geometry_msgs/Pose.h"
 #include "geometry_msgs/PoseStamped.h"
 #include "nav_msgs/Odometry.h"
+#include "std_msgs/Int32.h"
 #include "common.h"
 
 #include <dynamic_reconfigure/server.h>
@@ -92,6 +93,7 @@ void reconf(dino_nav::DinonavConfig &config, uint32_t level);
 void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg);
 void pose_recv(const geometry_msgs::PoseStamped::ConstPtr& msg);
 void odom_recv(const nav_msgs::Odometry::ConstPtr& msg);
+void track_zone_recv(const std_msgs::Int32::ConstPtr& msg);
 
 void init_view(view_t &view, int size);
 void init_car(car_t &car, view_t &view, float zoom);
