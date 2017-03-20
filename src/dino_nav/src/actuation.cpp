@@ -117,7 +117,9 @@ float calc_throttle(conf_t &conf, view_t &view, car_t &car, track_t &track, segm
     curve_dst -= 1;
     float min_dist = (estimated_speed*estimated_speed - curve_speed*curve_speed) / (2 * conf.car_decel);
     if(curve_dst >0 && curve_dst < min_dist && estimated_speed > curve_speed) {
-        throttle = -100;
+        if(throttle > 0)
+            throttle = 0;
+        throttle -= 1;
     } else {
         if(throttle < 0)
             throttle = 0;
