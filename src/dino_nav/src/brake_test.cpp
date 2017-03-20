@@ -1,5 +1,5 @@
 #include "ros/ros.h"
-
+ 
 #ifdef NOVIZ
     #include "dummyviz.h"
 #else
@@ -35,7 +35,7 @@ int test_num;
 extern ros::Publisher drive_pub, stat_pub;
 extern dinonav_t nav;
 
-const float BRK_DST = 10;
+const float BRK_DST = 14;
 const int MIN_DST = 2;
 float target_throttle = 0;
 
@@ -92,8 +92,10 @@ void run_test(float &throttle, float &steer, float wall_dist, view_t &view) {
 
     static float old_throttle = 0;
     static state_e state = PREPARE;
-
-    float lidar_speed = update_lidar_speed(wall_dist, ros::Time::now());
+ 
+    float lidar_speed = nav.estimated_speed;
+    if(wall_dist < 50)
+        lidar_speed = update_lidar_speed(wall_dist, ros::Time::now());
     float zed_speed = nav.estimated_speed;
     //viz_text(view.x + view.l + 20, view.y +100, 18, VIEW_COLOR, "lidar speed: %f", lidar_speed);
     //viz_text(view.x + view.l + 20, view.y +120, 18, VIEW_COLOR, "zed speed:   %f", zed_speed);
@@ -141,7 +143,7 @@ void run_test(float &throttle, float &steer, float wall_dist, view_t &view) {
             test->speed_reached = lidar_speed;
             printf("test %d BRAKE\n", current_test);
         } else {
-            if(old_throttle < test->speed)
+            if(old_throttle < target_throttle)
                 old_throttle += 0.7;
             throttle = old_throttle;
         }
@@ -150,7 +152,7 @@ void run_test(float &throttle, float &steer, float wall_dist, view_t &view) {
     case BRAKE:
       viz_text(view.x + view.l + 20, view.y +140, 15, VIEW_COLOR, "test %d status: BRAKE", current_test);
         if(lidar_speed > 0.01 || lidar_speed < -0.01) {
-            throttle = test->brake;
+            throttle = -100;
         } else {
             test->brake_end = wall_dist;
             print_test_text(current_test);
@@ -184,7 +186,7 @@ void laser_reciver(const sensor_msgs::LaserScan::ConstPtr& msg) {
     ros::WallTime time_debug = ros::WallTime::now(); //time record
     //ROS_INFO("Scan recived: [%f]", msg->scan_time);
     nav.conf.grid_dim = 800;
-    nav.conf.zoom = 3.0;
+    nav.conf.zoom = 10.0;
     init(nav.view, nav.car, nav.grid);
     
     perception(nav, msg);
@@ -194,24 +196,26 @@ void laser_reciver(const sensor_msgs::LaserScan::ConstPtr& msg) {
 
     float wall_y = 0;   
     int idx = nav.grid.middle_id;
-    int l = 10; 
-    for(int i=idx-l; i<=idx+l; i++)
-        wall_y += float(nav.grid.points[i].y);
-    wall_y /= (l*2+1);
+
+    float wall_dist = 1000;
+    if(nav.grid.points[idx].x == nav.conf.grid_dim/2) {
+        wall_y = nav.grid.points[idx].y;
+   
     
     float_point_t cp = grid2view(nav.car_pos.x, nav.car_pos.y, nav.view);
     float_point_t gp = grid2view(nav.car_pos.x, wall_y, nav.view);
-    float wall_dist = point_dst(cp, gp)*((nav.conf.zoom*2)/nav.view.l);
-  
+    wall_dist = point_dst(cp, gp)*((nav.conf.zoom*2)/nav.view.l);
+    }
+
     viz_line(cp, gp, PATH_COLOR, 1);
     viz_text(cp.x + 5, (cp.y + gp.y)/2, 15, VIEW_COLOR, "%f", wall_dist);
 
     float throttle = 0;
     float steer = 0;
     run_test(throttle, steer, wall_dist, nav.view);
-
+   
     race::drive_param drive_msg;
-    drive_msg.angle = 0;
+    drive_msg.angle = 2;
     drive_msg.velocity = throttle;
     drive_pub.publish(drive_msg);
 
