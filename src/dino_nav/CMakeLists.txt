@@ -64,3 +64,13 @@ add_dependencies(viewer ${PROJECT_NAME}_generate_messages)
 add_dependencies(viewer race_generate_messages)
 target_link_libraries(viewer  ${catkin_LIBRARIES} ${ALLEGRO5_LIBRARIES} ${ALLEGRO_PRIMITIVES_LIBRARIES}
                               ${ALLEGRO_TTF_LIBRARIES})
+
+add_executable(viewerTesi src/viewerTesi.cpp src/common.cpp src/grid.cpp src/viz.cpp)
+add_dependencies(viewerTesi ${PROJECT_NAME}_gencfg)
+add_dependencies(viewerTesi ${PROJECT_NAME}_generate_messages)
+add_dependencies(viewerTesi race_generate_messages)
+target_link_libraries(viewerTesi  ${catkin_LIBRARIES} ${ALLEGRO5_LIBRARIES} ${ALLEGRO_PRIMITIVES_LIBRARIES}
+                              ${ALLEGRO_TTF_LIBRARIES})
+
+
+                              
