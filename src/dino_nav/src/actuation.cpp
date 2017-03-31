@@ -21,14 +21,18 @@ void actuation(dinonav_t &nav, race::drive_param &drive_msg) {
     float_point_t enter = nav.curve.b;
     float_point_t exit = grid2view(goal.x, goal.y, nav.view);
     nav.curve_dst = -1;
+
+    if(nav.curve.a.x > 0) {
+        nav.curve_dst = fabs(start.y - nav.curve.a.y);
+        nav.curve_dst = nav.curve_dst*((nav.conf.zoom*2)/nav.view.l);
+    }
+
     if(nav.curve.b.x >0) {
         viz_circle(enter, 4, CAR_COLOR, 1);
         viz_circle(exit, 4, CAR_COLOR, 1);
         viz_line(start, enter, CAR_COLOR, 1);
         viz_line(enter, exit, CAR_COLOR, 1);
-        
-        nav.curve_dst = point_dst(start, enter);
-        nav.curve_dst = nav.curve_dst*((nav.conf.zoom*2)/nav.view.l);
+
         viz_text((start.x + enter.x)/2, (start.y + enter.y)/2, 10, RGBA(1,0,1,1), "  %f", nav.curve_dst);
     } else {
         viz_circle(exit, 4, CAR_COLOR, 1);

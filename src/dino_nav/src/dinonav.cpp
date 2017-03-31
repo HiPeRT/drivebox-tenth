@@ -188,10 +188,14 @@ void update_speed(geometry_msgs::Point p, ros::Time time) {
 /**
     PoseStamped callback
 */
-void pose_recv(const geometry_msgs::PoseStamped::ConstPtr& msg) {
-    
-    pose = msg->pose;
-    update_speed(msg->pose.position, msg->header.stamp);
+void pose_recv(const geometry_msgs::Pose2D::ConstPtr& msg) {
+    geometry_msgs::Point p;
+    p.x = msg->x;
+    p.y = msg->y;
+
+    pose.position.x = p.x;
+    pose.position.y = p.y;
+    update_speed(p, ros::Time::now());
 }
 
 /**
