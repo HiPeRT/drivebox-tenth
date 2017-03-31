@@ -34,7 +34,7 @@ bool grid_line_control(grid_t &grid, int x1, int y1, int x2, int y2);
 bool setgrid(grid_t &grid, int x, int y, int value);
 int getgrid(grid_t &grid, int x, int y);
 
-void inflate(grid_t &grid, int x, int y, int val, int n);
+void inflate(grid_t &grid, int cx, int cy, int val, int radius);
 
 float_point_t grid2view(int x, int y, view_t &view);
 point_t view2grid(float x, float y, view_t &view);

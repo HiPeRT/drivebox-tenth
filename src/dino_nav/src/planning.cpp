@@ -131,8 +131,16 @@ segment_t calc_curve(grid_t &grid, int gate_idx, float_point_t start,
         else
             tg = tg2;
 
-        viz_circle(tg, 10, PATH_COLOR, 1);
-        curve.b = tg;
+        point_t ct = view2grid(tg.x, tg.y, view);
+        point_t st = view2grid(start.x, start.y, view);
+
+        if(grid_line_control(grid, st.x, st.y, ct.x, ct.y)) {
+            viz_circle(tg, 10, PATH_COLOR, 1);
+            curve.b = tg;
+        } else {
+            curve.b.x = -1; curve.b.y = -1;
+            return curve;           
+        }
     } else {
         curve.b.x = -1; curve.b.y = -1;
         return curve;

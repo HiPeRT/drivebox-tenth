@@ -125,7 +125,10 @@ bool setgrid(grid_t &grid, int x, int y, int value) {
 
     if(x<0 || x >= grid.size || y<0 || y >= grid.size)
         return false;
-    grid.data[pos] = value;
+    
+    int old = grid.data[pos];
+    if(value == EMPTY || old < value)
+        grid.data[pos] = value;
     return true;
 }
 
@@ -142,25 +145,31 @@ int getgrid(grid_t &grid, int x, int y) {
 
 /**
     inflate a point with the given spread
-          X X X
+            X 
     X ->  X X X   example with n = 1
-          X X X
+            X 
 */
-void inflate(grid_t &grid, int x, int y, int val, int n) {
-    if(n == 0)
-        return;
-
-    if(getgrid(grid, x, y) != WALL)
-        setgrid(grid, x, y, val);
-
-    inflate(grid, x-1, y-1, val, n -1);
-    inflate(grid, x-1, y, val, n -1);
-    inflate(grid, x-1, y+1, val, n -1);
-    inflate(grid, x+1, y-1, val, n -1);
-    inflate(grid, x+1, y, val, n -1);
-    inflate(grid, x+1, y+1, val, n -1);
-    inflate(grid, x, y-1, val, n -1);
-    inflate(grid, x, y+1, val, n -1);
+void inflate(grid_t &grid, int cx, int cy, int val, int radius) { 
+    int d = 3 - (2 * radius); 
+    int x = 0; 
+    int y = radius; 
+    do { 
+        setgrid(grid, cx + x, cy + y, val); 
+        setgrid(grid, cx + x, cy - y, val); 
+        setgrid(grid, cx - x, cy + y, val); 
+        setgrid(grid, cx - x, cy - y, val); 
+        setgrid(grid, cx + y, cy + x, val); 
+        setgrid(grid, cx + y, cy - x, val); 
+        setgrid(grid, cx - y, cy + x, val); 
+        setgrid(grid, cx - y, cy - x, val); 
+        if (d < 0) { 
+            d = d + (4 * x) + 6; 
+        } else { 
+            d = d + 4 * (x - y) + 10; 
+            y--; 
+        } 
+        x++; 
+    } while (x <= y); 
 }
 
 /**
