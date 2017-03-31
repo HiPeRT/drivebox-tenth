@@ -16,7 +16,8 @@ void planning(dinonav_t &nav) {
     nav.goal_pos.y = -1;
 
     int gate_idx = choosegate(nav.grid, nav.car_pos.x, nav.car_pos.y);
-    nav.curve = calc_curve(nav.grid, gate_idx, nav.view, nav.car, nav.track, nav.conf);
+    nav.curve = calc_curve(nav.grid, gate_idx, grid2view(nav.car_pos.x, nav.car_pos.y, nav.view), 
+                            nav.view, nav.car, nav.track, nav.conf);
 
     nav.goal_pos.x = (nav.grid.gates[gate_idx].s.x + nav.grid.gates[gate_idx].e.x)/2;
     nav.goal_pos.y = (nav.grid.gates[gate_idx].s.y + nav.grid.gates[gate_idx].e.y)/2;
@@ -67,8 +68,7 @@ int choosegate(grid_t &grid, int px, int py) {
     return idx;
 }
 
-
-segment_t calc_curve(grid_t &grid, int gate_idx, 
+segment_t calc_curve(grid_t &grid, int gate_idx, float_point_t start,
     view_t &view, car_t &car, track_t &track, conf_t &conf) {
     
     segment_t curve;
@@ -95,26 +95,6 @@ segment_t calc_curve(grid_t &grid, int gate_idx,
         }
     }
 
-/*
-    int point_idx;
-    if(point1 < grid.middle_id && point2 < grid.middle_id) {
-        sign = -1;
-        internal = grid.points[point1];
-        external = grid.points[point2];
-        point_idx = point1;
-        viz_circle(grid2view(internal.x, internal.y, view), 2, PATH_COLOR, 1);
-
-    } else if (point1 >= grid.middle_id && point2 >= grid.middle_id) {
-        sign = +1;
-        internal = grid.points[point2];
-        external = grid.points[point1];
-        point_idx = point2;
-        viz_circle(grid2view(internal.x, internal.y, view), 2, PATH_COLOR, 1);
-
-    } else {
-        return;
-    }*/
-
     internal = grid.points[point1];
     external = grid.points[point2];
     float_point_t i = grid2view(internal.x, internal.y, view);
@@ -135,65 +115,30 @@ segment_t calc_curve(grid_t &grid, int gate_idx,
         external = grid.points[point1];
     } 
 
-    viz_line(   grid2view(internal.x, internal.y, view), 
+
+    curve.a = grid2view(internal.x, internal.y, view);
+
+    viz_line(   curve.a, 
                 grid2view(external.x, external.y, view), VIEW_COLOR, 1);
 
-    //calc curve intern
-    float s_ang = 0;
-    for(int i=0; i<6; i++) {
-        int id = point_idx + i*sign;
-        if(id <0 || id > grid.points_n-1)
-            break;
-        point_t s0 = grid.points[id];
-        float_point_t a  = grid2view(internal.x, internal.y, view);
-        float_point_t b = grid2view(s0.x, s0.y, view);
-        float ang = points_angle_rad(a.x, a.y, b.x, b.y) - M_PI/2*sign;
-        if(i == 0)
-            s_ang = ang;
+    float r = car.width*track.sects[track.cur_sect].enter;
+    viz_circle(curve.a, r, PATH_COLOR, 1);
+
+    float_point_t tg1, tg2, tg; 
+    if(find_circle_tang(curve.a, r, start, tg1, tg2)) {
+        if(gate_ang < 0)
+            tg = tg1;
         else
-            s_ang =  (s_ang + ang)/2;
-    } 
+            tg = tg2;
 
-    //reach opposite wall
-    float_point_t int_v = grid2view(internal.x, internal.y, view);
-    float_point_t opp_v, l_v;
-    float width = 0;
-    for(int i=1*conf.inflation +2; i<grid.size; i++) {
-        opp_v.x = int_v.x + cos(s_ang)*view.cell_l*i;   opp_v.y = int_v.y + sin(s_ang)*view.cell_l*i;    
-        point_t opp = view2grid(opp_v.x, opp_v.y, view);
-        width = i;
-        if(getgrid(grid, opp.x, opp.y) > GATE)
-            break;
+        viz_circle(tg, 10, PATH_COLOR, 1);
+        curve.b = tg;
+    } else {
+        curve.b.x = -1; curve.b.y = -1;
+        return curve;
     }
-    viz_line(int_v, opp_v, PATH_COLOR, 1);
 
-    curve.a.x = int_v.x;
-    curve.a.y = int_v.y;   
-    curve.b.x = int_v.x + cos(s_ang)*(car.width*track.sects[track.cur_sect].enter);   
-    curve.b.y = int_v.y + sin(s_ang)*(car.width*track.sects[track.cur_sect].enter);   
-    curve.dir = sign;
-
-    //reach end wall
-    s_ang -= M_PI/2*sign;
-    for(int i=1*conf.inflation +2; i<grid.size; i++) {
-        l_v.x = int_v.x + cos(s_ang)*view.cell_l*i;   l_v.y = int_v.y + sin(s_ang)*view.cell_l*i;    
-        point_t l = view2grid(l_v.x, l_v.y, view);
-        if(getgrid(grid, l.x, l.y) > GATE)
-            break;
-    }
-    viz_line(int_v, l_v, PATH_COLOR, 1);
-
-    /*anticipate brake
-    if(estimated_speed > 1) {
-        curve.b.x += cos(s_ang + M_PI)*car.width*(estimated_speed-1);   
-        curve.b.y += sin(s_ang + M_PI)*car.width*(estimated_speed-1); 
-    }*/
-
-    //sign on the center of curve
-    float_point_t center;
-    center.x = (opp_v.x + l_v.x)/2;
-    center.y = (opp_v.y + l_v.y)/2;
-    draw_signal(center, 15, track.sects[track.cur_sect].dir);
+    viz_circle(grid2view(internal.x, internal.y, view), 10, PATH_COLOR, 0);
 
     return curve;
 }

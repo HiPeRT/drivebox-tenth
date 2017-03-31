@@ -135,17 +135,19 @@ float calc_throttle(conf_t &conf, view_t &view, car_t &car, track_t &track, segm
     pos.x = view.x + view.l/2;
     pos.y = view.y + view.l - conf.ahead_offset - car.length*1;
     
-    if(point_is_front(curve, pos)*curve.dir > 0) {
-        viz_line(curve.a, curve.b, RGBA(1,0,0,1), 3);
-    } else if(curve_dst +1 > 0 && curve_dst +1 < 1) {
-        viz_line(curve.a, curve.b, RGBA(0,1,0,1), 3);
-        if(in_curve < 0) {
+    if(curve.a.x > 0) {
+        float Cdst = point_dst(curve.a, pos);
+        float Clen = car.width*track.sects[track.cur_sect].enter;
+
+        if(Cdst < Clen)
+            in_curve++;
+        
+        if(in_curve > 5 && Cdst > Clen) {
             printf("curve passed\n");
             track.cur_sect = (track.cur_sect +1) % track.sects_n;
-            in_curve = 15;
+            in_curve =0;
         }
     }
-    in_curve--;
 
     return throttle;
 }

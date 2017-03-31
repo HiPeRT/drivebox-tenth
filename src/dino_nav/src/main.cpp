@@ -90,7 +90,7 @@ int main(int argc, char **argv) {
     //!!! ALL CALLBACK FUNCTIONS ARE ON dinonav.cpp !!!
 
     std::string path = ros::package::getPath("dino_nav");
-    path = path + "/tracks/city.xml";
+    path = path + "/tracks/track.xml";
     if(!load_track(path.c_str()))
         return -1;
 

@@ -24,4 +24,7 @@ float point_dst(float_point_t &a, float_point_t &b);
 float point_is_front(segment_t &s, float_point_t &p);
 float fclamp(float val, float min, float max);
 
+bool find_circle_tang(float_point_t center, float radius, 
+    float_point_t external_point, float_point_t &pt1, float_point_t &pt2);
+    
 #endif //COMMON_H
