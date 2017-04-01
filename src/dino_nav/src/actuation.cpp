@@ -62,10 +62,12 @@ float calc_steer(float_point_t &start, view_t &view, car_t &car, grid_t &grid, p
     }
 
     int best_steer = 0;
-    int best_dist = 0;
+    int best_match = 0;
     for(int j=-100; j<100; j+=2) {
         float_point_t p = start;
         float ang = -M_PI/2;
+
+        int match = 0;
 
         float_point_t p0 = p;
         for(int i=0; i<20; i++) {
@@ -80,9 +82,10 @@ float calc_steer(float_point_t &start, view_t &view, car_t &car, grid_t &grid, p
             int val = getgrid(grid, gp.x, gp.y);
             if(val == PATH) {
                 viz_circle(p, 5, LPATH_COLOR, 1);
-                if(i > best_dist) {
+                match++;
+                if(match > best_match) {
                     best_steer = j;
-                    best_dist = i;
+                    best_match = match;
                 }
             } else if(val != EMPTY) {
                 break;
@@ -95,7 +98,7 @@ float calc_steer(float_point_t &start, view_t &view, car_t &car, grid_t &grid, p
     float ang = -M_PI/2;
 
     float_point_t p0 = p;
-    for(int i=0; i<best_dist; i++) {
+    for(int i=0; i<20; i++) {
         float steer_ang = ((float) best_steer) /100.0 * M_PI/4; 
 
         p.x = p.x + cos(ang + steer_ang)*view.cell_l;
@@ -106,7 +109,7 @@ float calc_steer(float_point_t &start, view_t &view, car_t &car, grid_t &grid, p
     }
 
     steer = best_steer;
-    steer_l = best_dist;
+    steer_l = 20;
 
     return steer;
 }
