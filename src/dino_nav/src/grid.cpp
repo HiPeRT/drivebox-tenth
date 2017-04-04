@@ -127,7 +127,7 @@ bool setgrid(grid_t &grid, int x, int y, int value) {
         return false;
     
     int old = grid.data[pos];
-    if(value == EMPTY || old < value)
+    if( (value == EMPTY && old != WALL) || old < value)
         grid.data[pos] = value;
     return true;
 }
@@ -150,26 +150,11 @@ int getgrid(grid_t &grid, int x, int y) {
             X 
 */
 void inflate(grid_t &grid, int cx, int cy, int val, int radius) { 
-    int d = 3 - (2 * radius); 
-    int x = 0; 
-    int y = radius; 
-    do { 
-        setgrid(grid, cx + x, cy + y, val); 
-        setgrid(grid, cx + x, cy - y, val); 
-        setgrid(grid, cx - x, cy + y, val); 
-        setgrid(grid, cx - x, cy - y, val); 
-        setgrid(grid, cx + y, cy + x, val); 
-        setgrid(grid, cx + y, cy - x, val); 
-        setgrid(grid, cx - y, cy + x, val); 
-        setgrid(grid, cx - y, cy - x, val); 
-        if (d < 0) { 
-            d = d + (4 * x) + 6; 
-        } else { 
-            d = d + 4 * (x - y) + 10; 
-            y--; 
-        } 
-        x++; 
-    } while (x <= y); 
+
+    for(int y=-radius; y<=radius; y++)
+        for(int x=-radius; x<=radius; x++)
+            if(x*x+y*y <= radius*radius)
+                setgrid(grid, cx+x, cy+y, val);
 }
 
 /**

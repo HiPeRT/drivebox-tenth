@@ -35,7 +35,14 @@ geometry_msgs::Pose pose;
     Reconf can be maneged with "rqt_reconfigure" package
 */
 void reconf(dino_nav::DinonavConfig &config, uint32_t level) {
-  ROS_INFO("Reconfigure Request");
+  printf("\n")
+  printf("################ RECONFIGURE ################\n");
+  printf("throttle\t\t%d\ninflation\t\t%d\n", config.throttle, config.inflation);
+  printf("grid_dim\t\t%d\nzoom\t\t\t%lf\n", config.grid_dim, config.zoom);
+  printf("ahead_offset\t\t%d\nenable\t\t\t%d\n", config.ahead_offset, config.enable);
+  printf("curve_speed\t\t%lf\ncar_decel\t\t%lf\n", config.curve_speed, config.car_decel);
+  printf("#############################################\n\n");
+
   nav.conf.throttle = config.throttle;
   nav.conf.inflation = config.inflation;
   nav.conf.grid_dim = config.grid_dim;
