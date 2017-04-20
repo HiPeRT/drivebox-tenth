@@ -1,5 +1,7 @@
 std_msgs/Header header
 
+sensor_msgs/LaserScan scan
+
 float32 car_w
 float32 car_l
 

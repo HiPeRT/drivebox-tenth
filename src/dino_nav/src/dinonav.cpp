@@ -35,7 +35,7 @@ geometry_msgs::Pose pose;
     Reconf can be maneged with "rqt_reconfigure" package
 */
 void reconf(dino_nav::DinonavConfig &config, uint32_t level) {
-  printf("\n")
+  printf("\n");
   printf("################ RECONFIGURE ################\n");
   printf("throttle\t\t%d\ninflation\t\t%d\n", config.throttle, config.inflation);
   printf("grid_dim\t\t%d\nzoom\t\t\t%lf\n", config.grid_dim, config.zoom);
@@ -128,6 +128,11 @@ void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
 
     //PUB stats for viewer
     dino_nav::Stat stat;
+    stat.scan.angle_min = msg->angle_min;      
+    stat.scan.angle_max = msg->angle_max;
+    stat.scan.angle_increment = msg->angle_increment;
+    stat.scan.ranges = msg->ranges;
+
     stat.car_w = nav.car.width;
     stat.car_l = nav.car.length;
 

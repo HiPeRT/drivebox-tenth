@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.8.3)
 project(dino_nav)
 
 find_package(catkin REQUIRED COMPONENTS roslib roscpp rospy 
-              std_msgs nav_msgs geometry_msgs genmsg race 
+              std_msgs nav_msgs geometry_msgs genmsg race sensor_msgs
               dynamic_reconfigure message_generation)
 
 find_package(PkgConfig)
@@ -23,6 +23,7 @@ generate_messages(
   DEPENDENCIES
   std_msgs
   geometry_msgs
+  sensor_msgs
 )
 
 
