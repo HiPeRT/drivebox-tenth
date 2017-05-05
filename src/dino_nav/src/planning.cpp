@@ -19,6 +19,19 @@ void planning(dinonav_t &nav) {
     nav.curve = calc_curve(nav.grid, gate_idx, grid2view(nav.car_pos.x, nav.car_pos.y, nav.view), 
                             nav.view, nav.car, nav.track, nav.conf);
 
+    nav.curve_dst = -1;
+    if(nav.curve.a.x > 0) {
+        float_point_t start = grid2view(nav.car_pos.x, nav.car_pos.y, nav.view);
+
+        nav.curve_dst = fabs(start.y - nav.curve.a.y);
+        nav.curve_dst = nav.curve_dst*((nav.conf.zoom*2)/nav.view.l);
+    
+        if(point_dst(start, nav.curve.a) < point_dst(nav.curve.a, nav.curve.b)) {
+            nav.curve.a.x = -1; nav.curve.a.y = -1;
+            nav.curve.b.x = -1; nav.curve.b.y = -1;
+        }
+    }
+
     nav.goal_pos.x = (nav.grid.gates[gate_idx].s.x + nav.grid.gates[gate_idx].e.x)/2;
     nav.goal_pos.y = (nav.grid.gates[gate_idx].s.y + nav.grid.gates[gate_idx].e.y)/2;
 
@@ -115,38 +128,54 @@ segment_t calc_curve(grid_t &grid, int gate_idx, float_point_t start,
         external = grid.points[point1];
     } 
 
-
-    curve.a = grid2view(internal.x, internal.y, view);
-
-    viz_line(   curve.a, 
+    viz_line(   grid2view(internal.x, internal.y, view), 
                 grid2view(external.x, external.y, view), VIEW_COLOR, 1);
 
-    float r = car.width*track.sects[track.cur_sect].enter;
-    viz_circle(curve.a, r, PATH_COLOR, 1);
-
-    float_point_t tg1, tg2, tg; 
-    if(find_circle_tang(curve.a, r, start, tg1, tg2)) {
-        if(gate_ang < 0)
-            tg = tg1;
+    //calc curve intern
+    float s_ang = 0;
+    for(int i=0; i<6; i++) {
+        int id = point_idx + i*sign;
+        if(id <0 || id > grid.points_n-1)
+            break;
+        point_t s0 = grid.points[id];
+        float_point_t a  = grid2view(internal.x, internal.y, view);
+        float_point_t b = grid2view(s0.x, s0.y, view);
+        float ang = points_angle_rad(a.x, a.y, b.x, b.y) - M_PI/2*sign;
+        if(i == 0)
+            s_ang = ang;
         else
-            tg = tg2;
+            s_ang =  (s_ang + ang)/2;
+    } 
 
-        point_t ct = view2grid(tg.x, tg.y, view);
-        point_t st = view2grid(start.x, start.y, view);
-
-        if(grid_line_control(grid, st.x, st.y, ct.x, ct.y)) {
-            viz_circle(tg, 10, PATH_COLOR, 1);
-            curve.b = tg;
-        } else {
-            curve.b.x = -1; curve.b.y = -1;
-            return curve;           
-        }
-    } else {
-        curve.b.x = -1; curve.b.y = -1;
-        return curve;
+    //reach opposite wall
+    float_point_t int_v = grid2view(internal.x, internal.y, view);
+    float_point_t opp_v, l_v;
+    float width = 0;
+    for(int i=1*conf.inflation +2; i<grid.size; i++) {
+        opp_v.x = int_v.x + cos(s_ang)*view.cell_l*i;   opp_v.y = int_v.y + sin(s_ang)*view.cell_l*i;    
+        point_t opp = view2grid(opp_v.x, opp_v.y, view);
+        width = i;
+        if(getgrid(grid, opp.x, opp.y) > GATE)
+            break;
     }
+    viz_line(int_v, opp_v, PATH_COLOR, 1);
 
-    viz_circle(grid2view(internal.x, internal.y, view), 10, PATH_COLOR, 0);
+    float curve_enter = point_dst(int_v, opp_v)/2;
+    curve.a.x = int_v.x;
+    curve.a.y = int_v.y;   
+    curve.b.x = int_v.x + cos(s_ang)*curve_enter;   
+    curve.b.y = int_v.y + sin(s_ang)*curve_enter;   
+    curve.dir = sign;
+
+    //reach end wall
+    s_ang -= M_PI/2*sign;
+    for(int i=1*conf.inflation +2; i<grid.size; i++) {
+        l_v.x = int_v.x + cos(s_ang)*view.cell_l*i;   l_v.y = int_v.y + sin(s_ang)*view.cell_l*i;    
+        point_t l = view2grid(l_v.x, l_v.y, view);
+        if(getgrid(grid, l.x, l.y) > GATE)
+            break;
+    }
+    viz_line(int_v, l_v, PATH_COLOR, 1);
 
     return curve;
 }

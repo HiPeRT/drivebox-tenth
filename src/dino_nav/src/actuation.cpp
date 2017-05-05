@@ -20,12 +20,6 @@ void actuation(dinonav_t &nav, race::drive_param &drive_msg) {
     float_point_t start = grid2view(part.x, part.y, nav.view);
     float_point_t enter = nav.curve.b;
     float_point_t exit = grid2view(goal.x, goal.y, nav.view);
-    nav.curve_dst = -1;
-
-    if(nav.curve.a.x > 0) {
-        nav.curve_dst = fabs(start.y - nav.curve.a.y);
-        nav.curve_dst = nav.curve_dst*((nav.conf.zoom*2)/nav.view.l);
-    }
 
     if(nav.curve.b.x >0) {
         viz_circle(enter, 4, CAR_COLOR, 1);
@@ -126,11 +120,11 @@ float calc_throttle(conf_t &conf, view_t &view, car_t &car, track_t &track, segm
     if(curve_dst >0 && curve_dst < min_dist && estimated_speed > curve_speed) {
         if(throttle > 0)
             throttle = 0;
-        throttle -= 1;
+        throttle -= 5;
     } else {
         if(throttle < 0)
             throttle = 0;
-        throttle++;
+        throttle += 2;
     } 
 
     if(throttle != throttle)
