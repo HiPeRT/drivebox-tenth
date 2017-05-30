@@ -99,4 +99,7 @@ void init_view(view_t &view, int size);
 void init_car(car_t &car, view_t &view, float zoom);
 void init(view_t &view, car_t &car, grid_t &grid);
 
+//implemented in grid.h
+float view2meters(dinonav_t &nav, float view_dist);
+
 #endif //DINONAV_H

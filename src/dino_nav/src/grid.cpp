@@ -177,3 +177,11 @@ point_t view2grid(float x, float y, view_t &view) {
 
     return p;
 }
+
+/**
+    convert view dist to meters
+*/
+float view2meters(dinonav_t &nav, float view_dist) {
+
+    return view_dist*((nav.conf.zoom*2)/nav.view.l);
+}

@@ -24,7 +24,7 @@ void planning(dinonav_t &nav) {
         float_point_t start = grid2view(nav.car_pos.x, nav.car_pos.y, nav.view);
 
         nav.curve_dst = fabs(start.y - nav.curve.a.y);
-        nav.curve_dst = nav.curve_dst*((nav.conf.zoom*2)/nav.view.l);
+        nav.curve_dst = view2meters(nav, nav.curve_dst);
     
         if(point_dst(start, nav.curve.a) < point_dst(nav.curve.a, nav.curve.b)) {
             nav.curve.a.x = -1; nav.curve.a.y = -1;

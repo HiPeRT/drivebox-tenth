@@ -32,10 +32,28 @@ void actuation(dinonav_t &nav, race::drive_param &drive_msg) {
         viz_circle(exit, 4, CAR_COLOR, 1);
     }
 
+    //find front wall distence
+    int y = part.y;
+    float front_wall_dist = 0;
+    while(y>=0) {
+        int val = getgrid(nav.grid, part.x, y);
+        if(val != WALL && val != INFLATED)
+            front_wall_dist += nav.view.cell_l;
+        else
+            break;
+
+        y--;
+    }
+    front_wall_dist = view2meters(nav, front_wall_dist);
+    float_point_t front_p = grid2view(part.x, y, nav.view);
+    viz_line(start, front_p, CAR_COLOR, 1);
+    viz_text(front_p.x, front_p.y, 10, VIEW_COLOR, "  %f", front_wall_dist);
+
+
     nav.steer = calc_steer(start, nav.view, nav.car, nav.grid, nav.path, nav.steer_l);
 
     nav.throttle = calc_throttle(nav.conf, nav.view, nav.car, nav.track, nav.curve, 
-        nav.curve_dst, nav.estimated_speed, nav.estimated_acc, nav.target_acc);
+        front_wall_dist, nav.estimated_speed, nav.estimated_acc, nav.target_acc);
     
     if(nav.throttle > nav.conf.throttle)
         nav.throttle = nav.conf.throttle;
@@ -110,26 +128,28 @@ float calc_steer(float_point_t &start, view_t &view, car_t &car, grid_t &grid, p
 
 
 float calc_throttle(conf_t &conf, view_t &view, car_t &car, track_t &track, segment_t &curve, 
-    float curve_dst, float estimated_speed, float estimated_acc, float &target_acc) {
+    float front_dst, float estimated_speed, float estimated_acc, float &target_acc) {
 
     static float throttle = 0;
-    float curve_speed = conf.curve_speed;
+    float curve_speed = front_dst/conf.curve_speed;
         
-    curve_dst -= 1;
-    float min_dist = (estimated_speed*estimated_speed - curve_speed*curve_speed) / (2 * conf.car_decel);
-    if(curve_dst >0 && curve_dst < min_dist && estimated_speed > curve_speed) {
+    float delta = fabs(estimated_speed - curve_speed);
+    if(estimated_speed > curve_speed) {
         if(throttle > 0)
             throttle = 0;
-        throttle -= 5;
+        throttle = -delta*conf.car_decel*10;
     } else {
         if(throttle < 0)
             throttle = 0;
-        throttle += 2;
+        throttle += delta;
     } 
 
     if(throttle != throttle)
         throttle = 0;
     throttle = fclamp(throttle, -100, 100);
+
+/*
+    CURVE PASSED
 
     static int in_curve = 0;
     float_point_t pos;
@@ -149,6 +169,6 @@ float calc_throttle(conf_t &conf, view_t &view, car_t &car, track_t &track, segm
             in_curve =0;
         }
     }
-
+*/
     return throttle;
 }
