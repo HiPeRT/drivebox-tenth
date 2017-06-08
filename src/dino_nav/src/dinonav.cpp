@@ -160,7 +160,7 @@ void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
 void update_speed(geometry_msgs::Point p, ros::Time time) {
 
     static bool init=false;
-    const int VELS_DIM = 10;
+    const int VELS_DIM = 4;
     static vels_t vels[VELS_DIM];
     static int now = 0;
 

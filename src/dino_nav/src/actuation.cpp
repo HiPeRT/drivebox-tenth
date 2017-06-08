@@ -130,6 +130,9 @@ float calc_steer(float_point_t &start, view_t &view, car_t &car, grid_t &grid, p
 float calc_throttle(conf_t &conf, view_t &view, car_t &car, track_t &track, segment_t &curve, 
     float front_dst, float estimated_speed, float estimated_acc, float &target_acc) {
 
+    if(front_dst < 0.2)
+       return -100;
+
     static float throttle = 0;
     float curve_speed = front_dst/conf.curve_speed;
         
@@ -140,7 +143,7 @@ float calc_throttle(conf_t &conf, view_t &view, car_t &car, track_t &track, segm
         throttle = -delta*conf.car_decel*10;
     } else {
         if(throttle < 0)
-            throttle = 0;
+            throttle = 10;
         throttle += delta;
     } 
 
