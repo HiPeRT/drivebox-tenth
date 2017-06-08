@@ -5,7 +5,7 @@
 #include <std_msgs/Empty.h>
 #include <race/drive_param.h>
 ros::NodeHandle  nh;
-
+ 
 
 
 boolean flagStop = false;
@@ -15,11 +15,13 @@ int pwm_upperlimit = 13108;   //  20% duty cycle
 
 std_msgs::Int32 str_msg;
 ros::Publisher chatter("chatter", &str_msg);
+race::drive_param drv_msg;
+ros::Publisher drive("drive_act", &drv_msg);
 
 int kill_pin = 2;
 unsigned long duration = 0;
 
-boolean manual = false;
+boolean manual = true;
 
 void writepwm(int pwm_angle, int pwm_drive)
 {
@@ -50,9 +52,11 @@ void messageDrive( const race::drive_param& par )
   if (manual)
     return;
 
+  send_drive_act(par.velocity, par.angle);
+
   if (flagStop == false) {
-    int16_t pwm_drive = map(par.velocity, -100, 100, 6554, 13108);
-    int16_t pwm_angle = map(par.angle, -100, 100, 6554, 13108);
+    int16_t pwm_drive = map(par.velocity, -100, 100, pwm_lowerlimit, pwm_upperlimit);
+    int16_t pwm_angle = map(par.angle, -100, 100, pwm_lowerlimit, pwm_upperlimit);
     writepwm(pwm_angle, pwm_drive);
     //str_msg.data = pwm_drive;
     //chatter.publish( &str_msg );
@@ -76,6 +80,12 @@ void messageEmergencyStop( const std_msgs::Bool& flag )
   }
 }
 
+void send_drive_act(int velocity, int angle) {
+
+    drv_msg.velocity = velocity;
+    drv_msg.angle = angle;
+    drive.publish(&drv_msg);
+}
 
 ros::Subscriber<race::drive_param> sub_drive("drive_parameters", &messageDrive );
 ros::Subscriber<std_msgs::Bool> sub_stop("eStop", &messageEmergencyStop );
@@ -101,7 +111,7 @@ void setup() {
   nh.subscribe(sub_stop);
 
   nh.advertise(chatter);
-  //nh.advertise(pub);
+  nh.advertise(drive);
 
 }
 
@@ -119,6 +129,9 @@ void loop() {
       int angle = map(pwm_angle, 1000, 2000, pwm_lowerlimit, pwm_upperlimit);
       int drive = map(pwm_drive, 1000, 2000, pwm_lowerlimit, pwm_upperlimit);
       writepwm(angle, drive);
+
+      send_drive_act( map(drive, pwm_lowerlimit, pwm_upperlimit, -100, 100),
+                      map(angle, pwm_lowerlimit, pwm_upperlimit, -100, 100));
     }
 
     nh.spinOnce();
