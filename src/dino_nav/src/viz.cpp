@@ -306,30 +306,24 @@ void draw_track(track_t &track, view_t &view) {
 }
 
 
-void draw_yaw(float yaw, view_t &view) {
+void draw_orient(float yaw, float pitch, float roll, view_t &view) {
     float size = 50;
     float_point_t center, pointer;
-    center.x = view.x + view.l + size/2 +10;
-    center.y = view.y + size/2 + 10; 
-    pointer.x = center.x + cos(yaw)*size/2;
-    pointer.y = center.y + sin(yaw)*size/2;
-    viz_line(center, pointer, PATH_COLOR, 1);
+    center.x = view.x + view.l*4/6;
+    center.y = view.y + view.l + size; 
+    draw_rotated_rectangle(center, size-5, size/10, yaw, VIEW_COLOR);
+    viz_text(center.x - size/2, center.y - size +12, 12, VIEW_COLOR, " yaw");
+    viz_text(center.x - size/2, center.y + size/2 + 5, 10, VIEW_COLOR, "%+0.3f", yaw);
 
-    static float prec_yaw = yaw;
-    static bool  dir = false;
-    float delta = prec_yaw -yaw;
-    if(delta > yaw+M_PI/10 && dir == false) {
-        dir = true;
-        prec_yaw = yaw;
-    } else if(delta < yaw-M_PI/10 && dir == true) {
-        dir = false;
-        prec_yaw = yaw;       
-    }
-    viz_text(center.x - size/2, center.y + size/2 + 5, 12, VIEW_COLOR, "yaw %f", delta);
-    viz_arc(center.x, center.y, size/2, yaw, delta, VIEW_COLOR, 1);
-    if(fabs(delta) > M_PI/2 - M_PI/10) {
-        prec_yaw = yaw;
-    }
+    center.x += size;
+    draw_rotated_rectangle(center, size-5, size/10, pitch, VIEW_COLOR);
+    viz_text(center.x - size/2, center.y - size +12, 12, VIEW_COLOR, "pitch");
+    viz_text(center.x - size/2, center.y + size/2 + 5, 10, VIEW_COLOR, "%+0.3f", pitch);
+
+    center.x += size;
+    draw_rotated_rectangle(center, size-5, size/10, roll, VIEW_COLOR);
+    viz_text(center.x - size/2, center.y - size +12, 12, VIEW_COLOR, " roll");
+    viz_text(center.x - size/2, center.y + size/2 + 5, 10, VIEW_COLOR, "%+0.3f", roll);
 } 
 
 void draw_car(conf_t &conf, view_t &view, car_t &car) {
@@ -344,4 +338,46 @@ void draw_path(path_t &path) {
         viz_circle(path.data[i], 2, PATH_COLOR, 1.0f);
         //viz_line(path.data[i-1], path.data[i], PATH_COLOR, 1);
     }
+}
+
+void plot_floats(float *values, int start, int size, float min, float max,
+                 float_point_t &pos, float_point_t &dim, const char *text) {
+
+    const float w = dim.x / size; 
+
+
+    float_point_t prec;
+    prec.x = pos.x;
+    prec.y = pos.y + dim.y;
+    
+    for(int i=0; i<size; i++) {
+        int idx = (i + start) % size;
+        
+        float val = values[idx];
+        float h = (val - min) * (dim.y - 0) / (max - min) + 0;
+
+        float_point_t p;
+        p.x = pos.x + w*i;
+        p.y = pos.y + dim.y - h;
+        viz_line(prec, p, PATH_COLOR, 1);    
+        prec = p;
+    }
+
+
+    viz_rect(pos, dim.x, dim.y, VIEW_COLOR, 1);
+    //draw scale
+    const int SCALE_NUM = 10;
+    for(int i=0; i<SCALE_NUM+1; i++) {
+        float n = (max - min)/SCALE_NUM;
+        float val = min + i*n;
+        float h = (val - min) * (dim.y - 0) / (max - min) + 0;
+
+        float_point_t p0 = { pos.x + dim.x, pos.y + dim.y - h };
+        float_point_t p1 = { p0.x  - 5,     p0.y };
+        
+        viz_line(p0, p1, VIEW_COLOR, 1);  
+        viz_text(p0.x + 10, p0.y - 5, 10, VIEW_COLOR, "%+00.2f", val);
+    }
+
+    viz_text(pos.x+3, pos.y +8, 15, VIEW_COLOR, "%s", text);
 }

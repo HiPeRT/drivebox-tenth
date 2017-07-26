@@ -2,6 +2,7 @@
 #define DINONAV_H
 
 #include "sensor_msgs/LaserScan.h"
+#include "sensor_msgs/Imu.h"
 #include "geometry_msgs/Pose.h"
 #include "geometry_msgs/Pose2D.h"
 #include "nav_msgs/Odometry.h"
@@ -83,9 +84,15 @@ struct dinonav_t {
     
     float estimated_speed;
     float estimated_acc;
+
     double yaw = 0;
+    double pitch = 0;
+    double roll = 0;
 
     float target_acc;
+
+    float speeds[256];  int speeds_idx = 0;
+    float imu_acc[256]; int imu_acc_idx= 0;
 };
 
 
@@ -93,6 +100,7 @@ void reconf(dino_nav::DinonavConfig &config, uint32_t level);
 void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg);
 void pose_recv(const geometry_msgs::Pose2D::ConstPtr& msg);
 void odom_recv(const nav_msgs::Odometry::ConstPtr& msg);
+void imu_recv(const sensor_msgs::Imu::ConstPtr& msg);
 void track_zone_recv(const std_msgs::Int32::ConstPtr& msg);
 
 void init_view(view_t &view, int size);

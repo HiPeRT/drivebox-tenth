@@ -72,10 +72,11 @@ int main(int argc, char **argv) {
 
     ros::NodeHandle n;
 
-    ros::Subscriber ssub = n.subscribe("scan", 1, laser_recv);          //lidar
-    //ros::Subscriber psub = n.subscribe("/pose2D", 1, pose_recv);   //pose from lidar
-    ros::Subscriber osub = n.subscribe("odom", 1, odom_recv);       //odometry from zed
-    ros::Subscriber tssub = n.subscribe("track_zone", 1, track_zone_recv); //track zone reset
+    ros::Subscriber ssub = n.subscribe("scan", 1, laser_recv);              //lidar
+    //ros::Subscriber psub = n.subscribe("/pose2D", 1, pose_recv);          //pose from lidar
+    ros::Subscriber osub = n.subscribe("odom", 1, odom_recv);               //odometry from lidar
+    ros::Subscriber isub = n.subscribe("imu", 1, imu_recv);                 //imu
+    ros::Subscriber tssub = n.subscribe("track_zone", 1, track_zone_recv);  //track zone reset
 
     drive_pub = n.advertise<race::drive_param>("drive_parameters", 1);  //param for move
     stat_pub = n.advertise<dino_nav::Stat>("dinonav/stat", 1);          //stats for viewer

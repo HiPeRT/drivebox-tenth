@@ -43,14 +43,14 @@ void reconf(dino_nav::DinonavConfig &config, uint32_t level) {
   printf("curve_speed\t\t%lf\ncar_decel\t\t%lf\n", config.curve_speed, config.car_decel);
   printf("#############################################\n\n");
 
-  nav.conf.throttle = config.throttle;
-  nav.conf.inflation = config.inflation;
-  nav.conf.grid_dim = config.grid_dim;
-  nav.conf.zoom = config.zoom;
+  nav.conf.throttle     = config.throttle;
+  nav.conf.inflation    = config.inflation;
+  nav.conf.grid_dim     = config.grid_dim;
+  nav.conf.zoom         = config.zoom;
   nav.conf.ahead_offset = config.ahead_offset;
-  nav.conf.enable = config.enable;
-  nav.conf.curve_speed = config.curve_speed;
-  nav.conf.car_decel = config.car_decel;
+  nav.conf.enable       = config.enable;
+  nav.conf.curve_speed  = config.curve_speed;
+  nav.conf.car_decel    = config.car_decel;
 }
 
 void init_view(view_t &view, int size) {
@@ -101,8 +101,8 @@ void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
 
     planning(nav);                          PTIME_INTER(PLANNING)
     
-    draw_yaw(nav.yaw, nav.view); 
-    draw_track(nav.track, nav.view);
+    draw_orient(nav.yaw, nav.pitch, nav.roll, nav.view);
+    //draw_track(nav.track, nav.view);
     draw_path(nav.path);
 
     race::drive_param drive_msg;
@@ -125,6 +125,11 @@ void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
         printf("DINONAV %lf %lf %lf\n", start, end, time);
     #endif
 
+    float_point_t pos = { nav.view.x + nav.view.l +10, 10 };
+    float_point_t dim = { 250, 250 };
+    plot_floats(nav.speeds, nav.speeds_idx, 256, 0, 10, pos, dim, "speed");
+    pos.y += 300;
+    plot_floats(nav.imu_acc, nav.imu_acc_idx, 256, -40, 40, pos, dim, "acceleration");
 
     //PUB stats for viewer
     dino_nav::Stat stat;
@@ -195,6 +200,10 @@ void update_speed(geometry_msgs::Point p, ros::Time time) {
 
     vels[now].vel = nav.estimated_speed;
     now = (now+1) % VELS_DIM;
+
+
+    nav.speeds[nav.speeds_idx % 256] = nav.estimated_speed;
+    nav.speeds_idx++;
 }
 
 /**
@@ -233,4 +242,24 @@ void track_zone_recv(const std_msgs::Int32::ConstPtr &msg) {
     nav.track.cur_sect = msg->data;
     printf("track zone reset to %d\n", msg->data);
 }
+
+void imu_recv(const sensor_msgs::Imu::ConstPtr& msg) {
+    const int MEAN_LENGHT = 2;
+
+    float sum = 0;
+    for(int i=nav.imu_acc_idx - MEAN_LENGHT; i<nav.imu_acc_idx; i++) {
+        int idx = i % 256;
+
+        sum += nav.imu_acc[idx];
+    }
+
+    nav.imu_acc[nav.imu_acc_idx % 256] = (sum + msg->linear_acceleration.y)/(MEAN_LENGHT+1);
+    nav.imu_acc_idx++;
+
+    //update nav.yaw value
+    tf::Quaternion q(   msg->orientation.x, msg->orientation.y,
+                        msg->orientation.z, msg->orientation.w);
+    tf::Matrix3x3(q).getRPY(nav.roll, nav.yaw, nav.pitch);
+}
+
 

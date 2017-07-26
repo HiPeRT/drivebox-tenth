@@ -80,7 +80,7 @@ void CLaserOdometry2D::Init()
     tf::StampedTransform transform;
     try
     {
-        tf_listener.lookupTransform("/base_link", last_scan.header.frame_id, ros::Time(0), transform);
+        tf_listener.lookupTransform(base_frame_id, last_scan.header.frame_id, ros::Time(0), transform);
     }
     catch (tf::TransformException &ex)
     {
@@ -918,7 +918,7 @@ void CLaserOdometry2D::PoseUpdate()
     tf::StampedTransform transform;
     try
     {
-        tf_listener.lookupTransform(last_scan.header.frame_id, "/base_link", ros::Time(0), transform);
+        tf_listener.lookupTransform(last_scan.header.frame_id, base_frame_id, ros::Time(0), transform);
     }
     catch (tf::TransformException &ex)
     {

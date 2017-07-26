@@ -40,9 +40,10 @@ float_point_t viz_mouse();
 void draw_drive_params(view_t &view, float throttle, float steer, float speed, float acc, float t_acc);
 void draw_grid(grid_t &grid, view_t &view);
 void draw_track(track_t &track, view_t &view);
-void draw_yaw(float yaw, view_t &view);
+void draw_orient(float yaw, float pitch, float roll, view_t &view);
 void draw_car(conf_t &conf, view_t &view, car_t &car);
 void draw_path(path_t &path);
-
+void plot_floats(float *values, int start, int size, float min, float max,
+                 float_point_t &pos, float_point_t &dim, const char *text);
 #endif //VIZ_H
 
