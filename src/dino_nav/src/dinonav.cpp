@@ -40,7 +40,7 @@ void reconf(dino_nav::DinonavConfig &config, uint32_t level) {
   printf("throttle\t\t%d\ninflation\t\t%d\n", config.throttle, config.inflation);
   printf("grid_dim\t\t%d\nzoom\t\t\t%lf\n", config.grid_dim, config.zoom);
   printf("ahead_offset\t\t%d\nenable\t\t\t%d\n", config.ahead_offset, config.enable);
-  printf("curve_speed\t\t%lf\ncar_decel\t\t%lf\n", config.curve_speed, config.car_decel);
+  printf("curve_safety\t\t%lf\ncar_decel\t\t%lf\n", config.curve_safety, config.car_decel);
   printf("#############################################\n\n");
 
   nav.conf.throttle     = config.throttle;
@@ -49,7 +49,7 @@ void reconf(dino_nav::DinonavConfig &config, uint32_t level) {
   nav.conf.zoom         = config.zoom;
   nav.conf.ahead_offset = config.ahead_offset;
   nav.conf.enable       = config.enable;
-  nav.conf.curve_speed  = config.curve_speed;
+  nav.conf.curve_safety = config.curve_safety;
   nav.conf.car_decel    = config.car_decel;
 }
 

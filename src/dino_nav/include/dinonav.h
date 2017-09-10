@@ -20,7 +20,7 @@ struct conf_t {
     float   zoom;
     int     ahead_offset;
     bool    enable;
-    float   curve_speed;
+    float   curve_safety;
     float   car_decel;
 };
 
@@ -109,5 +109,6 @@ void init(view_t &view, car_t &car, grid_t &grid);
 
 //implemented in grid.h
 float view2meters(dinonav_t &nav, float view_dist);
+float meters2view(dinonav_t &nav, float mtr_dist);
 
 #endif //DINONAV_H

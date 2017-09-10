@@ -10,6 +10,43 @@
     #include "viz.h"
 #endif
 
+int path_line(grid_t &grid, int x1, int y1, int x2, int y2, path_t &path) {
+    //gate search
+    int startGx = -1, startGy = -1;
+    int endGx = -1,   endGy = -1;
+
+    int dx = x1 - x2;
+    int dy = y1 - y2;
+    int steps;
+
+    if (abs(dx) > abs(dy))
+        steps = abs(dx);
+    else
+        steps = abs(dy);
+
+    float x_inc = -(float)dx / (float) steps;
+    float y_inc = -(float)dy / (float) steps;
+
+    if(steps > grid.size)
+        return 0;
+
+    float x = x1, y = y1;
+    for(int v=0; v < steps; v++)
+    {
+        x = x + x_inc;
+        y = y + y_inc;
+        int xx = x, yy = y;
+        if(getgrid(grid, xx, yy) == -1)
+            break;
+        path.data[path.size].x = xx;
+        path.data[path.size].y = yy;
+        path.size++;
+    }
+
+    return steps;
+}
+
+
 void planning(dinonav_t &nav) {
  
     nav.goal_pos.x = -1;
@@ -37,7 +74,20 @@ void planning(dinonav_t &nav) {
 
     setgrid(nav.grid, nav.goal_pos.x, nav.goal_pos.y, 0);
 
-    nav.path = pathfinding(nav.grid, nav.view, nav.car, nav.car_pos, nav.goal_pos, nav.curve);
+    //nav.path = pathfinding(nav.grid, nav.view, nav.car, nav.car_pos, nav.goal_pos, nav.curve);
+    nav.path.start = 0;
+    nav.path.size = 0;
+    if(nav.curve.a.x < 0) {
+        path_line(nav.grid, nav.car_pos.x, nav.car_pos.y, nav.goal_pos.x, nav.goal_pos.y, nav.path);
+    } else {
+        point_t enter = view2grid(nav.curve.b.x, nav.curve.b.y, nav.view);
+        path_line(nav.grid, nav.car_pos.x, nav.car_pos.y, enter.x, enter.y, nav.path);
+        path_line(nav.grid, enter.x, enter.y, nav.goal_pos.x, nav.goal_pos.y, nav.path);
+    } 
+
+    for(int i=0; i<nav.path.size; i++) {
+        nav.path.data[i] = grid2view(nav.path.data[i].x, nav.path.data[i].y, nav.view);
+    }
 }
 
 
@@ -164,7 +214,8 @@ segment_t calc_curve(grid_t &grid, int gate_idx, float_point_t start,
     curve.a.x = int_v.x;
     curve.a.y = int_v.y;   
     curve.b.x = int_v.x + cos(s_ang)*curve_enter;   
-    curve.b.y = int_v.y + sin(s_ang)*curve_enter;   
+    curve.b.y = int_v.y + sin(s_ang)*curve_enter;
+
     curve.dir = sign;
 
     //reach end wall

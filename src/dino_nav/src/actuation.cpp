@@ -33,22 +33,15 @@ void actuation(dinonav_t &nav, race::drive_param &drive_msg) {
     }
 
     //find front wall distence
-    int y = part.y;
-    float front_wall_dist = 0;
-    while(y>=0) {
-        int val = getgrid(nav.grid, part.x, y);
-        if(val != WALL && val != INFLATED)
-            front_wall_dist += nav.view.cell_l;
-        else
-            break;
-
-        y--;
+    float front_wall_dist = point_dst(nav.curve.a, start);
+    if(nav.curve.a.y <= 0) {
+        front_wall_dist = 1000;
+    } else { 
+        front_wall_dist = view2meters(nav, front_wall_dist);
+        float_point_t front_p = nav.curve.a;
+        viz_line(start, front_p, CAR_COLOR, 1);
+        viz_text(front_p.x, front_p.y, 10, VIEW_COLOR, "  %f", front_wall_dist);
     }
-    front_wall_dist = view2meters(nav, front_wall_dist);
-    float_point_t front_p = grid2view(part.x, y, nav.view);
-    viz_line(start, front_p, CAR_COLOR, 1);
-    viz_text(front_p.x, front_p.y, 10, VIEW_COLOR, "  %f", front_wall_dist);
-
 
     nav.steer = calc_steer(start, nav.view, nav.car, nav.grid, nav.path, nav.steer_l);
 
@@ -134,17 +127,17 @@ float calc_throttle(conf_t &conf, view_t &view, car_t &car, track_t &track, segm
        return -100;
 
     static float throttle = 0;
-    float curve_speed = front_dst/conf.curve_speed;
+    float curve_safety = front_dst/conf.curve_safety;
         
-    float delta = fabs(estimated_speed - curve_speed);
-    if(estimated_speed > curve_speed) {
+    float delta = fabs(estimated_speed - curve_safety);
+    if(estimated_speed > curve_safety) {
         if(throttle > 0)
             throttle = 0;
         throttle = -delta*conf.car_decel*10;
     } else {
         if(throttle < 0)
             throttle = 10;
-        throttle += delta;
+        throttle += delta*2;
     } 
 
     if(throttle != throttle)

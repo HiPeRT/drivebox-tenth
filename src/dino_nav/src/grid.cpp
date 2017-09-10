@@ -185,3 +185,11 @@ float view2meters(dinonav_t &nav, float view_dist) {
 
     return view_dist*((nav.conf.zoom*2)/nav.view.l);
 }
+
+/**
+    convert view dist to meters
+*/
+float meters2view(dinonav_t &nav, float mtr_dist) {
+
+    return mtr_dist/((nav.conf.zoom*2)/nav.view.l);
+}

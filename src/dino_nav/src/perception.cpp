@@ -11,7 +11,7 @@
 
 void perception(dinonav_t &nav, const sensor_msgs::LaserScan::ConstPtr& msg) {
 
-    discretize_laserscan(nav.grid, nav.view, nav.conf, msg);
+    discretize_laserscan(nav.grid, nav.view, nav.conf, nav, msg);
 
     nav.car_pos.x = nav.grid.size/2;
     nav.car_pos.y = nav.grid.size - nav.conf.ahead_offset/nav.view.cell_l - (nav.car.length/10*8)/nav.view.cell_l;
@@ -19,8 +19,9 @@ void perception(dinonav_t &nav, const sensor_msgs::LaserScan::ConstPtr& msg) {
 
 }
 
-void discretize_laserscan(grid_t &grid, view_t &view, conf_t &conf, const sensor_msgs::LaserScan::ConstPtr& msg) {
+void discretize_laserscan(grid_t &grid, view_t &view, conf_t &conf, dinonav_t &nav, const sensor_msgs::LaserScan::ConstPtr& msg) {
 
+    float compensate_speed = nav.estimated_speed*0.025f; 
 
     int quad_l = conf.zoom*2;
     int size = msg->ranges.size();
@@ -46,7 +47,7 @@ void discretize_laserscan(grid_t &grid, view_t &view, conf_t &conf, const sensor
             //coodianates of the sigle ray
             float view_r = r*view.l/quad_l; 
             float x = view.l/2 + cos(angle) * view_r;
-            float y = view.l -conf.ahead_offset + sin(angle) * view_r;
+            float y = view.l -conf.ahead_offset + sin(angle) * view_r + meters2view(nav, compensate_speed);
 
             //coordinates of the corrispondent cell
             int grid_x = x / view.cell_l;
