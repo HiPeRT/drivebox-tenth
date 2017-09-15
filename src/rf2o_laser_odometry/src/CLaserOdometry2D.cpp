@@ -78,6 +78,7 @@ void CLaserOdometry2D::Init()
     // This allow estimation of the odometry with respect to the robot base reference system.
     mrpt::poses::CPose3D LaserPoseOnTheRobot;
     tf::StampedTransform transform;
+    ros::Duration(1.0).sleep();
     try
     {
         tf_listener.lookupTransform(base_frame_id, last_scan.header.frame_id, ros::Time(0), transform);
