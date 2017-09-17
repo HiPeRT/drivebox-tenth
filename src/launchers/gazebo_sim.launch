@@ -3,4 +3,5 @@
 <launch>
 	<include file="$(find ackermann_vehicle_gazebo)/launch/ackermann_vehicle.launch" />
 
+    <node name="rviz" pkg="rviz" type="rviz"/>
 </launch>
