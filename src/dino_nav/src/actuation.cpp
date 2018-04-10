@@ -12,7 +12,8 @@
     #include "viz.h"
 #endif
 
-void actuation(dinonav_t &nav, race::drive_param &drive_msg) {
+
+void actuation(dinonav_t &nav, ackermann_msgs::AckermannDrive &drive_msg) {
 
     point_t part = nav.car_pos;
     point_t goal = nav.goal_pos;
@@ -51,8 +52,8 @@ void actuation(dinonav_t &nav, race::drive_param &drive_msg) {
     if(nav.throttle > nav.conf.throttle)
         nav.throttle = nav.conf.throttle;
 
-    drive_msg.velocity = nav.throttle;
-    drive_msg.angle = nav.steer;
+    drive_msg.speed = float(nav.throttle)/100;
+    drive_msg.steering_angle = float(nav.steer)/100;
     
 }
 

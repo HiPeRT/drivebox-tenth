@@ -210,7 +210,7 @@ segment_t calc_curve(grid_t &grid, int gate_idx, float_point_t start,
     }
     viz_line(int_v, opp_v, PATH_COLOR, 1);
 
-    float curve_enter = point_dst(int_v, opp_v)/2;
+    float curve_enter = point_dst(int_v, opp_v)*0.7;
     curve.a.x = int_v.x;
     curve.a.y = int_v.y;   
     curve.b.x = int_v.x + cos(s_ang)*curve_enter;   

@@ -7,7 +7,7 @@
 #endif
 #include "dinonav.h"
 
-#include "race/drive_param.h"
+#include "ackermann_msgs/AckermannDrive.h"
 #include "std_msgs/Float32.h"
 #include "dino_nav/Stat.h"
 
@@ -78,7 +78,7 @@ int main(int argc, char **argv) {
     ros::Subscriber isub = n.subscribe("imu", 1, imu_recv);                 //imu
     ros::Subscriber tssub = n.subscribe("track_zone", 1, track_zone_recv);  //track zone reset
 
-    drive_pub = n.advertise<race::drive_param>("drive_parameters", 1);  //param for move
+    drive_pub = n.advertise<ackermann_msgs::AckermannDrive>("drive_parameters", 1);  //param for move
     stat_pub = n.advertise<dino_nav::Stat>("dinonav/stat", 1);          //stats for viewer
     //speed_pub = n.advertise<std_msgs::Float32>("dinonav/speed", 1);
 

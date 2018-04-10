@@ -20,10 +20,8 @@
 #include "actuation.h"
 
 #include "dino_nav/Stat.h"
-#include "race/drive_param.h"
+#include "ackermann_msgs/AckermannDrive.h"
 #include "std_msgs/Float32.h"
-
-#define PTIME_INTER(N)  PTIME_END(); PTIME_STAMP(,N); PTIME_START()
 
 ros::Publisher drive_pub, stat_pub;
 
@@ -88,42 +86,26 @@ void init(view_t &view, car_t &car, grid_t &grid) {
 void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
     viz_clear();
 
-    //ROS_INFO("Scan recived: [%f]", msg->scan_time);
-    ros::WallTime time_debug = ros::WallTime::now(); //time record
-    PTIME_INIT()
-    PTIME_START()
-
     init(nav.view, nav.car, nav.grid);
-    perception(nav, msg);                   PTIME_INTER(PERCEPTION)
-
+    perception(nav, msg);
+    
     draw_car(nav.conf, nav.view, nav.car);
     draw_grid(nav.grid, nav.view);   
 
-    planning(nav);                          PTIME_INTER(PLANNING)
+    planning(nav);
     
     draw_orient(nav.yaw, nav.pitch, nav.roll, nav.view);
     //draw_track(nav.track, nav.view);
     draw_path(nav.path);
 
-    race::drive_param drive_msg;
-    actuation(nav, drive_msg);              PTIME_INTER(ACTUATION)
-
+    ackermann_msgs::AckermannDrive drive_msg;
+    actuation(nav, drive_msg);
+    
     //limit throttle
     nav.throttle = fclamp(nav.throttle, -100, nav.conf.throttle); 
     if(nav.conf.enable) 
         drive_pub.publish(drive_msg);
     draw_drive_params(nav.view, nav.throttle, nav.steer, nav.estimated_speed, nav.estimated_acc, 0);    
-
-    //check if the computation was taken in more than 0.025 secs
-    double time = (ros::WallTime::now() - time_debug).toSec();
-    #ifndef TIME_PROFILER
-    if(time >= 1/40.0f)
-        printf("iter time exceded: %lf\n", time);
-    #else
-        double start = time_debug.toSec();
-        double end = start + time;
-        printf("DINONAV %lf %lf %lf\n", start, end, time);
-    #endif
 
     float_point_t pos = { nav.view.x + nav.view.l +10, 10 };
     float_point_t dim = { 250, 250 };
@@ -147,8 +129,8 @@ void laser_recv(const sensor_msgs::LaserScan::ConstPtr& msg) {
     stat.zoom = nav.conf.zoom;
 
     stat.steer_l = nav.steer_l;
-    stat.throttle = drive_msg.velocity;
-    stat.steer = drive_msg.angle;
+    stat.throttle = drive_msg.speed;
+    stat.steer = drive_msg.steering_angle;
     stat.speed = nav.estimated_speed;
     stat.acc = nav.estimated_acc;
     stat.pose = pose;

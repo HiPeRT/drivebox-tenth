@@ -17,6 +17,8 @@ add_message_files(
    FloatPoint.msg
    Point.msg
    Stat.msg
+   keyframeGraphMsg.msg
+   keyframeMsg.msg
 )
 
 generate_messages(
