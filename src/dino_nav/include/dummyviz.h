@@ -32,9 +32,10 @@
 #define draw_drive_params(view, throttle, steer, speed, acc, t_acc)     ;
 #define draw_grid(grid, view)                                           ;
 #define draw_track(track, view)                                         ;
-#define draw_yaw(yaw, view)                                             ;
+#define draw_orient(yaw, p, r, view)                                    ;
 #define draw_car(conf, view, car)                                       ;
 #define draw_path(path)                                                 ;
+#define plot_floats(values, start, size, min, max, pos, dim, text)      ;
 
 #endif //DUMMYVIZ_H
 

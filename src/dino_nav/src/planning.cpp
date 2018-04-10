@@ -74,7 +74,8 @@ void planning(dinonav_t &nav) {
 
     setgrid(nav.grid, nav.goal_pos.x, nav.goal_pos.y, 0);
 
-    //nav.path = pathfinding(nav.grid, nav.view, nav.car, nav.car_pos, nav.goal_pos, nav.curve);
+    nav.path = pathfinding(nav.grid, nav.view, nav.car, nav.car_pos, nav.goal_pos, nav.curve);
+    /*
     nav.path.start = 0;
     nav.path.size = 0;
     if(nav.curve.a.x < 0) {
@@ -87,7 +88,7 @@ void planning(dinonav_t &nav) {
 
     for(int i=0; i<nav.path.size; i++) {
         nav.path.data[i] = grid2view(nav.path.data[i].x, nav.path.data[i].y, nav.view);
-    }
+    }*/
 }
 
 
