@@ -51,6 +51,11 @@ void actuation(dinonav_t &nav, ackermann_msgs::AckermannDrive &drive_msg) {
     
     if(nav.throttle > nav.conf.throttle)
         nav.throttle = nav.conf.throttle;
+    
+    if(nav.steer < 0)
+        nav.steer = nav.steer*nav.conf.oversteer_left; 
+    if(nav.steer > 0)
+        nav.steer = nav.steer*nav.conf.oversteer_right;
 
     drive_msg.speed = float(nav.throttle)/100;
     drive_msg.steering_angle = float(nav.steer)/100;

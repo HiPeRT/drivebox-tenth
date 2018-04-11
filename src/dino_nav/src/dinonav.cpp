@@ -33,22 +33,26 @@ geometry_msgs::Pose pose;
     Reconf can be maneged with "rqt_reconfigure" package
 */
 void reconf(dino_nav::DinonavConfig &config, uint32_t level) {
-  printf("\n");
-  printf("################ RECONFIGURE ################\n");
-  printf("throttle\t\t%d\ninflation\t\t%d\n", config.throttle, config.inflation);
-  printf("grid_dim\t\t%d\nzoom\t\t\t%lf\n", config.grid_dim, config.zoom);
-  printf("ahead_offset\t\t%d\nenable\t\t\t%d\n", config.ahead_offset, config.enable);
-  printf("curve_safety\t\t%lf\ncar_decel\t\t%lf\n", config.curve_safety, config.car_decel);
-  printf("#############################################\n\n");
+    printf("\n");
+    printf("################ RECONFIGURE ################\n");
+    printf("throttle\t\t%d\ninflation\t\t%d\n", config.throttle, config.inflation);
+    printf("grid_dim\t\t%d\nzoom\t\t\t%lf\n", config.grid_dim, config.zoom);
+    printf("ahead_offset\t\t%d\nenable\t\t\t%d\n", config.ahead_offset, config.enable);
+    printf("curve_safety\t\t%lf\ncar_decel\t\t%lf\n", config.curve_safety, config.car_decel);
+    printf("#############################################\n\n");
 
-  nav.conf.throttle     = config.throttle;
-  nav.conf.inflation    = config.inflation;
-  nav.conf.grid_dim     = config.grid_dim;
-  nav.conf.zoom         = config.zoom;
-  nav.conf.ahead_offset = config.ahead_offset;
-  nav.conf.enable       = config.enable;
-  nav.conf.curve_safety = config.curve_safety;
-  nav.conf.car_decel    = config.car_decel;
+    nav.conf.throttle     = config.throttle;
+    nav.conf.inflation    = config.inflation;
+    nav.conf.grid_dim     = config.grid_dim;
+    nav.conf.zoom         = config.zoom;
+    nav.conf.ahead_offset = config.ahead_offset;
+    nav.conf.enable       = config.enable;
+    nav.conf.curve_safety = config.curve_safety;
+    nav.conf.car_decel    = config.car_decel;
+
+    nav.conf.dist_from_center = config.dist_from_center;
+    nav.conf.oversteer_left   = config.oversteer_left;
+    nav.conf.oversteer_right  = config.oversteer_right;
 }
 
 void init_view(view_t &view, int size) {
@@ -207,7 +211,10 @@ void pose_recv(const geometry_msgs::Pose2D::ConstPtr& msg) {
 void odom_recv(const nav_msgs::Odometry::ConstPtr& msg) {
 
     pose = msg->pose.pose;
-    update_speed(msg->pose.pose.position, msg->header.stamp);
+    //update_speed(msg->pose.pose.position, msg->header.stamp);
+    double vx = msg->twist.twist.linear.x;
+    double vy = msg->twist.twist.linear.y;
+    nav.estimated_speed = sqrt(vx*vx + vy*vy);
 
     //update nav.yaw value
     tf::Quaternion q(   pose.orientation.x, pose.orientation.y,

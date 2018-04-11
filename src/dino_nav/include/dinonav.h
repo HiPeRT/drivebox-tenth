@@ -22,6 +22,10 @@ struct conf_t {
     bool    enable;
     float   curve_safety;
     float   car_decel;
+
+    float   dist_from_center;
+    float   oversteer_left;
+    float   oversteer_right;
 };
 
 const int EMPTY     = 0;
