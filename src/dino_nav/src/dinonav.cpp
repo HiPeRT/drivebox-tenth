@@ -53,6 +53,7 @@ void reconf(dino_nav::DinonavConfig &config, uint32_t level) {
     nav.conf.dist_from_center = config.dist_from_center;
     nav.conf.oversteer_left   = config.oversteer_left;
     nav.conf.oversteer_right  = config.oversteer_right;
+    nav.conf.lidar_pos        = config.lidar_pos;
 }
 
 void init_view(view_t &view, int size) {

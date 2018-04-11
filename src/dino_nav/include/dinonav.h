@@ -26,6 +26,7 @@ struct conf_t {
     float   dist_from_center;
     float   oversteer_left;
     float   oversteer_right;
+    float   lidar_pos;
 };
 
 const int EMPTY     = 0;
